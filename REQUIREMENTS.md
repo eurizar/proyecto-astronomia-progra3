@@ -26,7 +26,7 @@ git config --global user.email "tu-correo@ejemplo.com"
 
 ## 2. .NET SDK 8.0
 
-Necesario para compilar y ejecutar el backend en C#.
+Necesario para compilar y ejecutar el backend en C# (ASP.NET Core MVC).
 
 **Descargar:** https://dotnet.microsoft.com/download/dotnet/8.0
 - Descargar **.NET SDK** (no solo el Runtime).
@@ -42,7 +42,7 @@ dotnet --version
 
 ## 3. Entity Framework Core (ORM)
 
-Maneja la conexión y consultas a PostgreSQL desde C# sin escribir SQL manual.
+Maneja la conexión y consultas a SQL Server desde C# sin escribir SQL manual.
 
 **Instalar la herramienta de migraciones (una sola vez, global):**
 ```bash
@@ -55,51 +55,61 @@ dotnet ef --version
 # Esperado: Entity Framework Core .NET Command-line Tools 8.x.x
 ```
 
-Los paquetes NuGet del proyecto (EF Core + provider de PostgreSQL) se instalan automáticamente al hacer `dotnet restore` dentro de la carpeta del backend — no requieren descarga manual.
+Los paquetes NuGet del proyecto se instalan automáticamente al hacer `dotnet restore` dentro de la carpeta del backend — no requieren descarga manual.
 
 ---
 
-## 4. PostgreSQL 15 o superior
+## 4. SQL Server
 
-Base de datos del proyecto.
+Base de datos del proyecto. Usar la edición **Express** o **Developer** (ambas gratuitas).
 
-**Descargar:** https://www.postgresql.org/download/windows/
-- Usar el instalador de **EDB** (el más completo).
-- Durante la instalación, recordar la contraseña del usuario `postgres` — la van a necesitar.
-- Instalar también **pgAdmin 4** (viene incluido en el instalador de EDB).
+### Opción A — SQL Server Express (recomendado para desarrollo)
 
-**Verificar instalación:**
-```bash
-psql --version
-# Esperado: psql (PostgreSQL) 15.x o 16.x
-```
+**Descargar:** https://www.microsoft.com/es-es/sql-server/sql-server-downloads
+- En la página, elegir **Express** → descargar el instalador básico.
 
-**Crear la base de datos del proyecto:**
-```bash
-psql -U postgres -c "CREATE DATABASE astronomia_db;"
-```
+**Verificar que el servicio esté corriendo:**
+- Buscar "Servicios" en Windows.
+- Confirmar que `SQL Server (SQLEXPRESS)` está en estado **En ejecución**.
 
-**Cargar el esquema y datos iniciales:**
-```bash
-psql -U postgres -d astronomia_db -f database/schema.sql
-psql -U postgres -d astronomia_db -f database/seed.sql
-```
+### Opción B — SQL Server Developer (más completo)
+
+**Descargar:** https://www.microsoft.com/es-es/sql-server/sql-server-downloads
+- Elegir **Developer** — mismas funciones que Enterprise, solo para desarrollo.
 
 ---
 
-## 4. Visual Studio Code (recomendado)
+## 5. SQL Server Management Studio (SSMS)
 
-Editor de código. Si ya tienen Visual Studio 2022 o Rider, también sirve.
+Interfaz gráfica para administrar la base de datos, ejecutar scripts y ver tablas.
+
+**Descargar:** https://aka.ms/ssmsfullsetup
+
+**Alternativa más ligera:** Azure Data Studio — https://aka.ms/azuredatastudio
+
+---
+
+## 6. Visual Studio 2022 (recomendado) o VS Code
+
+Editor de código. Visual Studio 2022 tiene soporte nativo superior para ASP.NET Core MVC.
+
+### Visual Studio 2022
+
+**Descargar:** https://visualstudio.microsoft.com/es/downloads/
+- Edición **Community** (gratuita para estudiantes).
+- Durante la instalación, seleccionar el workload **"Desarrollo de ASP.NET y web"**.
+
+### VS Code (alternativa)
 
 **Descargar:** https://code.visualstudio.com/
 
-**Extensiones recomendadas para instalar en VS Code:**
+**Extensiones recomendadas:**
 
 | Extensión | Para qué sirve |
 |-----------|----------------|
-| `C# Dev Kit` (Microsoft) | Soporte completo de C# |
-| `SQL Tools` + `SQL Tools PostgreSQL Driver` | Consultas a PostgreSQL desde VS Code |
-| `Live Server` | Servidor local para el frontend |
+| `C# Dev Kit` (Microsoft) | Soporte completo de C# y ASP.NET Core |
+| `SQL Server (mssql)` (Microsoft) | Conexión y consultas a SQL Server desde VS Code |
+| `Razor+` | Resaltado de sintaxis para vistas .cshtml |
 | `GitLens` | Historial de Git mejorado |
 | `Prettier` | Formateo de HTML/CSS/JS |
 
@@ -107,55 +117,134 @@ Instalar desde la pestaña de Extensiones (Ctrl+Shift+X) buscando el nombre.
 
 ---
 
-## 5. Pasos para arrancar el proyecto desde cero
+## 7. Pasos para arrancar el proyecto desde cero
 
-### 5.1 Clonar el repositorio
+### 7.1 Clonar el repositorio
 
 ```bash
 git clone https://github.com/eurizar/proyecto-astronomia-progra3.git
 cd proyecto-astronomia-progra3
 ```
 
-### 5.2 Configurar la base de datos
+### 7.2 Crear y configurar la base de datos
 
-```bash
-psql -U postgres -c "CREATE DATABASE astronomia_db;"
-psql -U postgres -d astronomia_db -f database/schema.sql
-psql -U postgres -d astronomia_db -f database/seed.sql
+#### Paso A — Encontrar el nombre de tu servidor SQL Server
+
+1. Abrir **SSMS** (SQL Server Management Studio).
+2. En el cuadro "Nombre del servidor" del diálogo de conexión, el nombre que aparece es tu servidor (ej. `ELIZANDRO`, `DESKTOP-ABC123`, `localhost\SQLEXPRESS`).
+3. Anotar ese nombre — se usará en el paso C.
+
+> **Autenticación recomendada:** usar **Autenticación de Windows** (no requiere contraseña). Si usas autenticación SQL Server (`sa`), necesitarás la contraseña del usuario.
+
+#### Paso B — Ejecutar los scripts SQL en orden
+
+Con SSMS abierto y conectado a tu servidor, ejecutar los siguientes archivos **en este orden**. Importante: leer por qué existe cada uno.
+
+---
+
+**Script 1 — `database/schema.sql`** *(ejecutar conectado a `AstronomiaDB` o crear la BD primero)*
+
+**¿Por qué existe?**
+Define la **estructura** de la base de datos: crea las 6 tablas del sistema (`tipos_objeto`, `constelaciones`, `sistemas_planetarios`, `objetos_astronomicos`, `relaciones`, `consultas_log`), sus columnas, tipos de dato, claves primarias, claves foráneas e índices de búsqueda. Sin este script, la base de datos existe pero está vacía — no hay dónde guardar nada.
+
+También contiene sentencias `DROP TABLE IF EXISTS` al inicio para poder volver a ejecutarlo en cualquier momento durante el desarrollo sin errores (borra y recrea las tablas limpias).
+
+**Cómo ejecutarlo:**
+1. En SSMS → **Nueva consulta**
+2. Si `AstronomiaDB` no existe aún, ejecutar primero:
+   ```sql
+   CREATE DATABASE AstronomiaDB;
+   ```
+3. En el desplegable de base de datos (arriba izquierda), seleccionar **`AstronomiaDB`**
+4. `Archivo → Abrir → Archivo...` → seleccionar `database/schema.sql`
+5. Clic en **Ejecutar** (F5)
+6. Resultado esperado: `Los comandos se han completado correctamente.`
+
+---
+
+**Script 2 — `database/seed.sql`** *(ejecutar después de schema.sql, en `AstronomiaDB`)*
+
+**¿Por qué existe?**
+Inserta **datos iniciales de prueba** para que la aplicación tenga información desde el primer día sin necesidad de conectarse a la API externa. Incluye: 7 tipos de objeto, 5 constelaciones, 3 sistemas planetarios, 13 objetos astronómicos (Sol, 8 planetas, Próxima Centauri, TRAPPIST-1 y 2 exoplanetas) y 8 relaciones entre ellos que forman el grafo inicial.
+
+Sin este script, la app arrancaría con el catálogo vacío y habría que importar datos desde la API externa antes de poder probar cualquier funcionalidad.
+
+**Cómo ejecutarlo:**
+1. En SSMS → **Nueva consulta**
+2. Desplegable → **`AstronomiaDB`** (verificar antes de ejecutar)
+3. `Archivo → Abrir` → seleccionar `database/seed.sql`
+4. Clic en **Ejecutar** (F5)
+5. Resultado esperado: múltiples líneas de `(N filas afectadas)` sin errores rojos.
+
+**Verificar que quedó bien:**
+```sql
+USE AstronomiaDB;
+SELECT COUNT(*) AS total_objetos FROM objetos_astronomicos;
+-- Debe devolver: 13
 ```
 
-### 5.3 Ejecutar el prototipo de API (prueba)
+---
+
+#### Paso C — Configurar la cadena de conexión
+
+Editar `backend/AstronomiaApp/appsettings.json` — reemplazar `TU_SERVIDOR` con el nombre encontrado en el Paso A:
+
+```json
+{
+  "ConnectionStrings": {
+    "AstronomiaDB": "Server=TU_SERVIDOR;Database=AstronomiaDB;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+**Ejemplos según instalación:**
+
+| Tipo de instalación | Valor de `Server` |
+|--------------------|--------------------|
+| SQL Server Developer (instalación por defecto) | `NOMBRE_PC` (ej. `ELIZANDRO`) |
+| SQL Server Express | `NOMBRE_PC\SQLEXPRESS` |
+| SQL Server local con instancia nombrada | `localhost\NOMBRE_INSTANCIA` |
+
+> `Trusted_Connection=True` usa **Autenticación de Windows** — no requiere usuario ni contraseña en el archivo. Si tu equipo usa autenticación SQL Server, cambiar a: `User Id=sa;Password=TU_PASSWORD;`
+
+### 7.4 Ejecutar el prototipo de API (prueba de Fase 1)
 
 ```bash
 cd backend/prototipo-api
 dotnet run
 ```
 
-Debe mostrar los planetas del Sistema Solar en consola. Si lo hace, el entorno está bien configurado.
+Debe mostrar los planetas del Sistema Solar en consola. Si lo hace, el entorno .NET está bien configurado.
 
-### 5.4 Abrir el frontend
+### 7.5 Ejecutar la aplicación MVC (Fase 2 en adelante)
 
-Abrir `frontend/index.html` directamente en el navegador, o usar Live Server en VS Code (clic derecho → "Open with Live Server").
+```bash
+cd backend/AstronomiaApp
+dotnet restore
+dotnet run
+# Abrir http://localhost:5000 en el navegador
+```
 
 ---
 
-## 6. Herramientas opcionales (recomendadas)
+## 8. Herramientas opcionales (recomendadas)
 
 | Herramienta | Uso | Descarga |
 |-------------|-----|----------|
-| **pgAdmin 4** | Interfaz gráfica para PostgreSQL | Viene con el instalador de PostgreSQL |
-| **Postman** | Probar los endpoints del backend | https://www.postman.com/downloads/ |
+| **Postman** | Probar los endpoints API del backend | https://www.postman.com/downloads/ |
 | **GitHub Desktop** | Interfaz gráfica para Git | https://desktop.github.com/ |
+| **Azure Data Studio** | Alternativa liviana a SSMS | https://aka.ms/azuredatastudio |
 
 ---
 
-## 7. Resumen de versiones mínimas
+## 9. Resumen de versiones mínimas
 
 | Herramienta | Versión mínima |
 |-------------|----------------|
 | Git | 2.40+ |
 | .NET SDK | 8.0+ |
-| PostgreSQL | 15+ |
+| SQL Server | 2019+ (o Express) |
+| Visual Studio | 2022 Community |
 | VS Code | Cualquier versión reciente |
 
 ---
@@ -165,8 +254,10 @@ Abrir `frontend/index.html` directamente en el navegador, o usar Live Server en 
 **`dotnet` no se reconoce como comando:**
 Cerrar y volver a abrir la terminal después de instalar .NET SDK. Si sigue sin funcionar, agregar manualmente `C:\Program Files\dotnet` a la variable de entorno `PATH`.
 
-**`psql` no se reconoce como comando:**
-Agregar `C:\Program Files\PostgreSQL\15\bin` (ajustar según versión instalada) a la variable de entorno `PATH`.
+**No se puede conectar a SQL Server:**
+- Verificar que el servicio `SQL Server (SQLEXPRESS)` o `SQL Server (MSSQLSERVER)` esté corriendo en "Servicios de Windows".
+- Si usas Express, cambiar la cadena de conexión a `Server=localhost\SQLEXPRESS`.
+- Habilitar TCP/IP en SQL Server Configuration Manager si la conexión falla por red.
 
-**Error de contraseña en PostgreSQL:**
-Usar la contraseña que definieron al instalar. Si no la recuerdan, se puede resetear desde pgAdmin.
+**Error de certificado SSL en la conexión:**
+Agregar `TrustServerCertificate=True;` a la cadena de conexión (ya incluido en la plantilla de appsettings.json).
