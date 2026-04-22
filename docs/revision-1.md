@@ -209,7 +209,7 @@ Cronograma detallado de la Fase 1 en [PlanDeTrabajo.md](../PlanDeTrabajo.md).
 
 ## Anexos
 
-- [PlanDeTrabajo.md](../PlanDeTrabajo.md) — plan general del proyecto.
+- [PlanDeTrabajo.md](PlanDeTrabajo.md) — plan general del proyecto.
 - [arquitectura.md](arquitectura.md) — arquitectura detallada.
 - [estructuras.md](estructuras.md) — estructuras de datos.
 - [modelo-datos.md](modelo-datos.md) — modelo de BD (SQL Server).
