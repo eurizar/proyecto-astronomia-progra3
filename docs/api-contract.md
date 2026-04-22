@@ -1,6 +1,6 @@
 # Contrato de Rutas y API (ASP.NET Core MVC)
 
-Este documento define las rutas MVC (que devuelven Razor Views) y los endpoints API JSON (para llamadas AJAX desde el JavaScript del wwwroot). **Mientras el backend no esté listo, el Integrante 3 puede crear las vistas con datos mock que respeten estas estructuras.**
+Este documento define las rutas MVC (que devuelven Razor Views) y los endpoints API JSON (para llamadas AJAX desde el JavaScript del wwwroot). **Mientras el backend no esté listo, el Integrante 3 puede crear las vistas con datos mock que respeten estas estructuras. El Integrante 4 documentará cualquier cambio al contrato.**
 
 ---
 

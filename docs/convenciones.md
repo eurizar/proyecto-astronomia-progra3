@@ -1,6 +1,6 @@
 # Convenciones del Equipo
 
-Reglas acordadas por los 3 integrantes para trabajar sin conflictos.
+Reglas acordadas por los 4 integrantes para trabajar sin conflictos.
 
 ---
 

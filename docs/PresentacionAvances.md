@@ -11,9 +11,10 @@
 
 | Nombre | Rol en el proyecto |
 |--------|--------------------|
-| *(Integrante 1)* | Backend y Estructuras de Datos |
+| *(Integrante 1)* | Backend y Estructuras (Lista, AVL) |
 | *(Integrante 2)* | Base de Datos y consumo de API |
-| *(Integrante 3)* | Vistas y Documentación |
+| *(Integrante 3)* | Vistas Razor y Frontend |
+| *(Integrante 4)* | Estructuras (Grafo, Cola) y Documentación |
 
 ---
 

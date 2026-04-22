@@ -10,7 +10,7 @@
 | Campo | Detalle |
 |-------|---------|
 | **Variante seleccionada** | Variante 8 — Sistema de Exploración y Análisis de Objetos Astronómicos |
-| **Modalidad** | Grupo de 3 integrantes |
+| **Modalidad** | Grupo de 4 integrantes |
 | **Framework** | ASP.NET Core MVC (.NET 8) |
 | **Base de Datos** | SQL Server |
 | **Interfaz de usuario** | Razor Views (.cshtml) + CSS + JavaScript |
@@ -42,9 +42,10 @@ Para evitar problemas de integración al final, cada integrante tiene un **rol p
 
 | Integrante | Rol Principal | Rol Secundario | Responsabilidades clave |
 |------------|---------------|----------------|-------------------------|
-| **Integrante 1** | Backend & Estructuras de Datos | Integración API externa | Implementar estructuras (Lista, AVL), lógica de negocio, Controllers API |
-| **Integrante 2** | Base de Datos & API Externa | Backend (Hash, Grafo) | Diseño BD, scripts SQL Server, consumo API, DbContext EF Core |
-| **Integrante 3** | Vistas & Documentación | QA / Pruebas | Razor Views, CSS/JS, documentación y README |
+| **Integrante 1** | Backend & Estructuras (Lista, AVL) | Integración API externa | Lista enlazada manual, Árbol AVL manual, Services, Controllers API |
+| **Integrante 2** | Base de Datos & API Externa | Backend (Tabla Hash) | SQL Server, scripts BD, EF Core DbContext, consumo Solar System API, Tabla Hash manual |
+| **Integrante 3** | Vistas Razor & Frontend | QA / Pruebas | Razor Views (.cshtml), CSS, JS en wwwroot, integración con Controllers |
+| **Integrante 4** | Estructuras (Grafo, Cola) & Documentación | Pruebas unitarias | Grafo manual, Cola, Pila, documentación técnica, README, pruebas unitarias |
 
 > Nota: los roles **secundarios** existen para que nadie quede bloqueado si un integrante no entrega a tiempo.
 
@@ -91,7 +92,7 @@ Decisiones a tomar:
 
 #### Tarea 1.2 — Crear repositorio GitHub y configurar estructura
 **Responsable:** Integrante 3
-**Apoyo:** Integrante 1
+**Apoyo:** Integrante 4
 **Salida:** Repo público con carpetas y README inicial.
 
 Pasos concretos:
@@ -104,7 +105,7 @@ Pasos concretos:
    README.md
    .gitignore
    ```
-3. Agregar a los 3 integrantes como colaboradores.
+3. Agregar a los 4 integrantes como colaboradores.
 4. Crear ramas base:
    - `main` → solo código estable (merges por PR).
    - `develop` → rama de integración.
@@ -178,7 +179,7 @@ Debe incluir:
 - **Frecuencia de sync:** reunión semanal + chat diario de bloqueos.
 
 #### Tarea 1.8 — Redactar documento de la Primera Revisión
-**Responsable:** Integrante 3
+**Responsable:** Integrante 4
 **Apoyo:** Todos
 **Salida:** `/docs/revision-1.md` (o PDF final).
 
@@ -200,13 +201,13 @@ Secciones obligatorias:
 | Semana | Día | Tarea | Responsable |
 |--------|-----|-------|-------------|
 | 1 | Lun | Reunión inicial + definir alcance (1.1) | Todos |
-| 1 | Mar | Crear repo + estructura (1.2) | Int. 3 |
+| 1 | Mar | Crear repo + estructura (1.2) | Int. 3 + Int. 4 |
 | 1 | Mié–Jue | Diseño arquitectura (1.3) + elección estructuras (1.4) | Int. 1 |
 | 1 | Vie | Modelo de BD (1.5) | Int. 2 |
-| 1 | Sáb | Prototipo consumo API (1.6) | Int. 2 |
+| 1 | Sáb | Prototipo consumo API (1.6) | Int. 2 + apoyo Int. 1 |
 | 2 | Lun | Revisión conjunta de avances | Todos |
 | 2 | Mar | Convenciones del equipo (1.7) | Todos |
-| 2 | Mié–Jue | Redacción documento revisión (1.8) | Int. 3 |
+| 2 | Mié–Jue | Redacción documento revisión (1.8) | Int. 4 |
 | 2 | Vie | Revisión final + push de entregables | Todos |
 | 2 | Sáb | Ensayo corto de presentación | Todos |
 
@@ -218,7 +219,7 @@ Esta es la parte crítica. Los conflictos en proyectos grupales aparecen por: ra
 
 ### 6.1 Contratos de rutas internas (Controllers)
 
-Antes de que el Integrante 3 empiece las vistas, Integrantes 1 y 2 deben publicar un archivo `/docs/api-contract.md` con las rutas MVC y los endpoints API que expondrá el backend. Ejemplo:
+Antes de que el Integrante 3 empiece las vistas, los Integrantes 1 y 2 deben publicar `/docs/api-contract.md` con las rutas MVC y endpoints API del backend. Ejemplo:
 
 ```
 GET  /Objetos              → vista: catálogo de todos los objetos
@@ -248,7 +249,7 @@ Con rutas definidas desde el inicio, los integrantes pueden avanzar con vistas m
 
 ### 6.4 Pruebas de integración temprana
 
-Al terminar la **Fase 2**, los 3 integrantes deben hacer un **día de integración**: levantar la app MVC + BD + datos reales en la misma máquina, navegar la UI completa y documentar lo que falla. Si algo falla, se arregla antes de avanzar.
+Al terminar la **Fase 2**, los 4 integrantes deben hacer un **día de integración**: levantar la app MVC + BD + datos reales en la misma máquina, navegar la UI completa y documentar lo que falla. Si algo falla, se arregla antes de avanzar.
 
 ### 6.5 Documentación continua
 
@@ -312,4 +313,4 @@ Antes de presentar la Fase 1, verificar que todo lo siguiente esté en el reposi
 ---
 
 **Última actualización:** 2026-04-21
-**Siguiente reunión recomendada:** acordar fecha de kickoff con los 3 integrantes esta semana.
+**Siguiente reunión recomendada:** acordar fecha de kickoff con los 4 integrantes esta semana.

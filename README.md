@@ -29,9 +29,10 @@ Este proyecto corresponde a la **Variante 8** del documento de requerimientos de
 
 | Nombre | Rol principal | Rol secundario | Usuario GitHub |
 |--------|---------------|----------------|----------------|
-| *(Integrante 1)* | Backend & Estructuras de Datos | Integración API externa | *(pendiente)* |
-| *(Integrante 2)* | Base de Datos & API Externa | Backend (Hash, Grafo) | *(pendiente)* |
-| *(Integrante 3)* | Vistas & Documentación | QA / Pruebas | *(pendiente)* |
+| *(Integrante 1)* | Backend & Estructuras (Lista, AVL) | Integración API externa | *(pendiente)* |
+| *(Integrante 2)* | Base de Datos & API Externa | Backend (Tabla Hash) | *(pendiente)* |
+| *(Integrante 3)* | Vistas Razor & Frontend | QA / Pruebas | *(pendiente)* |
+| *(Integrante 4)* | Estructuras (Grafo, Cola) & Documentación | Pruebas unitarias | *(pendiente)* |
 
 > Completar esta tabla con los nombres reales y usuarios de GitHub del equipo.
 

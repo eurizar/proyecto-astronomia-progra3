@@ -12,9 +12,10 @@
 
 | Nombre completo | Carné | Rol principal | Usuario GitHub |
 |-----------------|-------|---------------|----------------|
-| *(Integrante 1)* | *(pendiente)* | Backend & Estructuras de Datos | *(pendiente)* |
+| *(Integrante 1)* | *(pendiente)* | Backend & Estructuras (Lista, AVL) | *(pendiente)* |
 | *(Integrante 2)* | *(pendiente)* | Base de Datos & API Externa | *(pendiente)* |
-| *(Integrante 3)* | *(pendiente)* | Vistas & Documentación | *(pendiente)* |
+| *(Integrante 3)* | *(pendiente)* | Vistas Razor & Frontend | *(pendiente)* |
+| *(Integrante 4)* | *(pendiente)* | Estructuras (Grafo, Cola) & Documentación | *(pendiente)* |
 
 ---
 
@@ -176,9 +177,10 @@ Cronograma detallado de la Fase 1 en [PlanDeTrabajo.md](../PlanDeTrabajo.md).
 
 | Integrante | Rol principal | Responsabilidades en Fase 1 |
 |------------|---------------|------------------------------|
-| Int. 1 | Backend & Estructuras | Arquitectura, selección de estructuras, apoyo en prototipo API |
-| Int. 2 | BD & API | Modelo de datos, scripts SQL Server, prototipo de consumo API |
-| Int. 3 | Vistas & Docs | Repositorio GitHub, README, redacción del documento |
+| Int. 1 | Backend & Estructuras (Lista, AVL) | Arquitectura, selección de estructuras, apoyo en prototipo API |
+| Int. 2 | BD & API Externa | Modelo de datos, scripts SQL Server, prototipo de consumo API |
+| Int. 3 | Vistas Razor & Frontend | Repositorio GitHub, README, estructura de carpetas |
+| Int. 4 | Estructuras (Grafo, Cola) & Docs | Redacción del documento de revisión, convenciones del equipo |
 
 ---
 
