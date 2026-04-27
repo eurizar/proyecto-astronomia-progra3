@@ -152,11 +152,18 @@ public class ObjetoService
     {
         int importados = 0, actualizados = 0, errores = 0;
 
+        // Diccionario temporal para relacionar el ApiId (ej. "terre") con tu Id autogenerado en SQL Server
+        var mapaApiIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
         try
         {
             var cuerpos = await _apiClient.ObtenerTodosAsync();
 
-            // Asegurar que existe tipo "Planeta"
+            // Asegurar la existencia de los tipos de objeto
+            var tipoEstrella = await _db.TiposObjeto.FirstOrDefaultAsync(t => t.Nombre == "Estrella")
+                              ?? new TipoObjeto { Nombre = "Estrella", Descripcion = "Cuerpo masivo que emite luz propia" };
+            if (tipoEstrella.Id == 0) { _db.TiposObjeto.Add(tipoEstrella); await _db.SaveChangesAsync(); }
+
             var tipoPlaneta = await _db.TiposObjeto.FirstOrDefaultAsync(t => t.Nombre == "Planeta")
                               ?? new TipoObjeto { Nombre = "Planeta", Descripcion = "Cuerpo celeste que orbita una estrella" };
             if (tipoPlaneta.Id == 0) { _db.TiposObjeto.Add(tipoPlaneta); await _db.SaveChangesAsync(); }
@@ -165,20 +172,23 @@ public class ObjetoService
                                ?? new TipoObjeto { Nombre = "Satélite", Descripcion = "Luna o cuerpo en órbita de un planeta" };
             if (tipoSatelite.Id == 0) { _db.TiposObjeto.Add(tipoSatelite); await _db.SaveChangesAsync(); }
 
-            // Asegurar sistema Solar
             var sistemaSolar = await _db.SistemasPlanetarios.FirstOrDefaultAsync(s => s.Nombre == "Sistema Solar")
                                ?? new SistemaPlanetario { Nombre = "Sistema Solar" };
             if (sistemaSolar.Id == 0) { _db.SistemasPlanetarios.Add(sistemaSolar); await _db.SaveChangesAsync(); }
 
+            // --- PASO 1: Guardar todos los objetos ---
             foreach (var cuerpo in cuerpos)
             {
                 try
                 {
                     bool esPlaneta = cuerpo.EsPlaneta;
                     bool esSatelite = cuerpo.AlrededorDe != null;
-                    if (!esPlaneta && !esSatelite) continue; // solo planetas y lunas
+                    bool esEstrella = cuerpo.NombreIngles == "Sun" || cuerpo.Nombre == "Soleil" || cuerpo.TipoCuerpo == "Star";
 
-                    var tipo = esPlaneta ? tipoPlaneta : tipoSatelite;
+                    if (!esPlaneta && !esSatelite && !esEstrella) continue;
+
+                    var tipo = esEstrella ? tipoEstrella : (esPlaneta ? tipoPlaneta : tipoSatelite);
+
                     var existente = await _db.ObjetosAstronomicos
                         .FirstOrDefaultAsync(o => o.Nombre == cuerpo.NombreIngles || o.Nombre == cuerpo.Nombre);
 
@@ -189,6 +199,9 @@ public class ObjetoService
                         existente.DistanciaTierraAl = cuerpo.SemiEjeMayor > 0 ? cuerpo.SemiEjeMayor : null;
                         existente.TemperaturaK = cuerpo.TemperaturaPromedio > 0 ? cuerpo.TemperaturaPromedio : null;
                         actualizados++;
+
+                        // Almacenamos el mapeo usando ApiId
+                        mapaApiIds[cuerpo.ApiId] = existente.Id;
                     }
                     else
                     {
@@ -200,16 +213,67 @@ public class ObjetoService
                             RadioKm = cuerpo.RadioMedio > 0 ? cuerpo.RadioMedio : null,
                             DistanciaTierraAl = cuerpo.SemiEjeMayor > 0 ? cuerpo.SemiEjeMayor : null,
                             TemperaturaK = cuerpo.TemperaturaPromedio > 0 ? cuerpo.TemperaturaPromedio : null,
-                            SistemaId = esPlaneta ? sistemaSolar.Id : null,
+                            SistemaId = esEstrella || esPlaneta ? sistemaSolar.Id : null,
                         };
                         _db.ObjetosAstronomicos.Add(nuevo);
+                        await _db.SaveChangesAsync();
                         importados++;
+
+                        mapaApiIds[cuerpo.ApiId] = nuevo.Id;
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Error importando cuerpo {Nombre}", cuerpo.Nombre);
                     errores++;
+                }
+            }
+
+            // --- PASO 2: Generar Relaciones Automáticamente ---
+
+            // Obtenemos el ID del sol para asignar los planetas a él
+            int? idDelSol = mapaApiIds.ContainsKey("soleil") ? mapaApiIds["soleil"] :
+                           (mapaApiIds.ContainsKey("sun") ? mapaApiIds["sun"] : null);
+
+            foreach (var cuerpo in cuerpos)
+            {
+                if (!mapaApiIds.ContainsKey(cuerpo.ApiId)) continue;
+
+                int idHijo = mapaApiIds[cuerpo.ApiId];
+                int? idPadre = null;
+
+                if (cuerpo.AlrededorDe != null)
+                {
+                    // AQUÍ LA SOLUCIÓN: Usamos "Nombre" ya que así lo definiste en PlanetaRefDto
+                    string idPadreApi = cuerpo.AlrededorDe.Nombre;
+
+                    if (!string.IsNullOrEmpty(idPadreApi) && mapaApiIds.ContainsKey(idPadreApi))
+                    {
+                        idPadre = mapaApiIds[idPadreApi];
+                    }
+                }
+                else if (cuerpo.EsPlaneta && idDelSol.HasValue)
+                {
+                    idPadre = idDelSol.Value;
+                }
+
+                if (idPadre.HasValue)
+                {
+                    // ⚠️ IMPORTANTE: Como no me pasaste la clase "Relacion.cs", sigo usando "PadreId" e "HijoId".
+                    // Si esto tira error, borra "PadreId", escribe un punto "." y selecciona lo que te sugiera Visual Studio.
+                    bool existeRelacion = await _db.Relaciones.AnyAsync(r =>
+                        r.OrigenId == idPadre.Value &&
+                        r.DestinoId == idHijo);
+
+                    if (!existeRelacion)
+                    {
+                        _db.Relaciones.Add(new Relacion
+                        {
+                            OrigenId = idPadre.Value,
+                            DestinoId = idHijo,
+                            TipoRelacion = "Órbita"
+                        });
+                    }
                 }
             }
 
