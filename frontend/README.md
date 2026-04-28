@@ -37,7 +37,7 @@ El frontend está integrado dentro del proyecto ASP.NET Core MVC siguiendo el pa
 
 Se eligió **Razor Views integradas en el backend** (en lugar de un SPA separado) porque:
 
-- El catedrático solicitó ASP.NET Core MVC con Razor como tecnología de presentación.
-- Permite generar HTML en servidor con datos tipados en C#.
-- Reduce complejidad al no necesitar un proyecto frontend independiente.
-- El JavaScript se limita a interactividad (AJAX, Canvas, Three.js) sin framework SPA.
+- Integra frontend y backend en un solo proyecto .NET 8, simplificando desarrollo y despliegue.
+- Permite generar HTML en servidor con datos tipados en C#, sin necesidad de una API REST adicional para las vistas.
+- Reduce complejidad al eliminar un proyecto frontend independiente con su propio build system.
+- El JavaScript se limita a interactividad puntual (AJAX, Canvas, Three.js) sin overhead de framework SPA.
