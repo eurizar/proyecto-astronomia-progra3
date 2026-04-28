@@ -13,8 +13,12 @@ builder.Services.AddDbContext<AstronomiaDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("AstronomiaDB")));
 
 // HttpClient para API externa
-builder.Services.AddHttpClient<SolarSystemApiClient>(client =>
+builder.Services.AddHttpClient<SolarSystemApiClient>((sp, client) =>
 {
+    var key = sp.GetRequiredService<IConfiguration>()["SolarSystemApi:ApiKey"];
+    if (!string.IsNullOrEmpty(key))
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
