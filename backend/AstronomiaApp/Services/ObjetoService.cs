@@ -160,34 +160,47 @@ public class ObjetoService
             var cuerpos = await _apiClient.ObtenerTodosAsync();
 
             // Asegurar la existencia de los tipos de objeto
-            var tipoEstrella = await _db.TiposObjeto.FirstOrDefaultAsync(t => t.Nombre == "Estrella")
-                              ?? new TipoObjeto { Nombre = "Estrella", Descripcion = "Cuerpo masivo que emite luz propia" };
-            if (tipoEstrella.Id == 0) { _db.TiposObjeto.Add(tipoEstrella); await _db.SaveChangesAsync(); }
+            async Task<TipoObjeto> ObtenerOCrearTipo(string nombre, string descripcion)
+            {
+                var tipo = await _db.TiposObjeto.FirstOrDefaultAsync(t => t.Nombre == nombre)
+                           ?? new TipoObjeto { Nombre = nombre, Descripcion = descripcion };
+                if (tipo.Id == 0) { _db.TiposObjeto.Add(tipo); await _db.SaveChangesAsync(); }
+                return tipo;
+            }
 
-            var tipoPlaneta = await _db.TiposObjeto.FirstOrDefaultAsync(t => t.Nombre == "Planeta")
-                              ?? new TipoObjeto { Nombre = "Planeta", Descripcion = "Cuerpo celeste que orbita una estrella" };
-            if (tipoPlaneta.Id == 0) { _db.TiposObjeto.Add(tipoPlaneta); await _db.SaveChangesAsync(); }
-
-            var tipoSatelite = await _db.TiposObjeto.FirstOrDefaultAsync(t => t.Nombre == "Satélite")
-                               ?? new TipoObjeto { Nombre = "Satélite", Descripcion = "Luna o cuerpo en órbita de un planeta" };
-            if (tipoSatelite.Id == 0) { _db.TiposObjeto.Add(tipoSatelite); await _db.SaveChangesAsync(); }
+            var tipoEstrella      = await ObtenerOCrearTipo("Estrella",       "Cuerpo masivo que emite luz propia");
+            var tipoPlaneta       = await ObtenerOCrearTipo("Planeta",        "Cuerpo celeste que orbita una estrella");
+            var tipoSatelite      = await ObtenerOCrearTipo("Satélite",       "Luna o cuerpo en órbita de un planeta");
+            var tipoAsteroide     = await ObtenerOCrearTipo("Asteroide",      "Cuerpo rocoso menor del sistema solar");
+            var tipoCometa        = await ObtenerOCrearTipo("Cometa",         "Cuerpo helado con coma y cola");
+            var tipoPlanetaEnano  = await ObtenerOCrearTipo("Planeta Enano",  "Cuerpo que no ha limpiado su órbita");
 
             var sistemaSolar = await _db.SistemasPlanetarios.FirstOrDefaultAsync(s => s.Nombre == "Sistema Solar")
                                ?? new SistemaPlanetario { Nombre = "Sistema Solar" };
             if (sistemaSolar.Id == 0) { _db.SistemasPlanetarios.Add(sistemaSolar); await _db.SaveChangesAsync(); }
 
-            // --- PASO 1: Guardar todos los objetos ---
+            // --- PASO 1: Preparar todos los objetos (sin guardar aún) ---
+            var pendientesNuevos = new List<(ObjetoAstronomico Obj, string ApiId)>();
+
             foreach (var cuerpo in cuerpos)
             {
                 try
                 {
-                    bool esPlaneta = cuerpo.EsPlaneta;
-                    bool esSatelite = cuerpo.AlrededorDe != null;
-                    bool esEstrella = cuerpo.NombreIngles == "Sun" || cuerpo.Nombre == "Soleil" || cuerpo.TipoCuerpo == "Star";
+                    bool esPlaneta      = cuerpo.EsPlaneta;
+                    bool esSatelite     = cuerpo.AlrededorDe != null;
+                    bool esEstrella     = cuerpo.NombreIngles == "Sun" || cuerpo.Nombre == "Soleil" || cuerpo.TipoCuerpo == "Star";
+                    bool esAsteroide    = cuerpo.TipoCuerpo == "Asteroid";
+                    bool esCometa       = cuerpo.TipoCuerpo == "Comet";
+                    bool esPlanetaEnano = cuerpo.TipoCuerpo == "Dwarf Planet";
 
-                    if (!esPlaneta && !esSatelite && !esEstrella) continue;
+                    if (!esPlaneta && !esSatelite && !esEstrella && !esAsteroide && !esCometa && !esPlanetaEnano) continue;
 
-                    var tipo = esEstrella ? tipoEstrella : (esPlaneta ? tipoPlaneta : tipoSatelite);
+                    TipoObjeto tipo = esEstrella    ? tipoEstrella :
+                                      esPlaneta     ? tipoPlaneta :
+                                      esSatelite    ? tipoSatelite :
+                                      esAsteroide   ? tipoAsteroide :
+                                      esCometa      ? tipoCometa :
+                                                      tipoPlanetaEnano;
 
                     var existente = await _db.ObjetosAstronomicos
                         .FirstOrDefaultAsync(o => o.Nombre == cuerpo.NombreIngles || o.Nombre == cuerpo.Nombre);
@@ -199,8 +212,6 @@ public class ObjetoService
                         existente.DistanciaTierraAl = cuerpo.SemiEjeMayor > 0 ? cuerpo.SemiEjeMayor : null;
                         existente.TemperaturaK = cuerpo.TemperaturaPromedio > 0 ? cuerpo.TemperaturaPromedio : null;
                         actualizados++;
-
-                        // Almacenamos el mapeo usando ApiId
                         mapaApiIds[cuerpo.ApiId] = existente.Id;
                     }
                     else
@@ -213,13 +224,11 @@ public class ObjetoService
                             RadioKm = cuerpo.RadioMedio > 0 ? cuerpo.RadioMedio : null,
                             DistanciaTierraAl = cuerpo.SemiEjeMayor > 0 ? cuerpo.SemiEjeMayor : null,
                             TemperaturaK = cuerpo.TemperaturaPromedio > 0 ? cuerpo.TemperaturaPromedio : null,
-                            SistemaId = esEstrella || esPlaneta ? sistemaSolar.Id : null,
+                            SistemaId = (esEstrella || esPlaneta || esAsteroide || esCometa || esPlanetaEnano) ? sistemaSolar.Id : null,
                         };
                         _db.ObjetosAstronomicos.Add(nuevo);
-                        await _db.SaveChangesAsync();
+                        pendientesNuevos.Add((nuevo, cuerpo.ApiId));
                         importados++;
-
-                        mapaApiIds[cuerpo.ApiId] = nuevo.Id;
                     }
                 }
                 catch (Exception ex)
@@ -229,9 +238,12 @@ public class ObjetoService
                 }
             }
 
-            // --- PASO 2: Generar Relaciones Automáticamente ---
+            // Un save: persiste updates + nuevos; EF Core llena IDs generados
+            await _db.SaveChangesAsync();
+            foreach (var (obj, apiId) in pendientesNuevos)
+                mapaApiIds[apiId] = obj.Id;
 
-            // Obtenemos el ID del sol para asignar los planetas a él
+            // --- PASO 2: Generar Relaciones ---
             int? idDelSol = mapaApiIds.ContainsKey("soleil") ? mapaApiIds["soleil"] :
                            (mapaApiIds.ContainsKey("sun") ? mapaApiIds["sun"] : null);
 
@@ -244,13 +256,10 @@ public class ObjetoService
 
                 if (cuerpo.AlrededorDe != null)
                 {
-                    // AQUÍ LA SOLUCIÓN: Usamos "Nombre" ya que así lo definiste en PlanetaRefDto
+                    // AlrededorDe.Nombre mapea JSON "planet" = API ID del padre (ej. "terre", "mars")
                     string idPadreApi = cuerpo.AlrededorDe.Nombre;
-
                     if (!string.IsNullOrEmpty(idPadreApi) && mapaApiIds.ContainsKey(idPadreApi))
-                    {
                         idPadre = mapaApiIds[idPadreApi];
-                    }
                 }
                 else if (cuerpo.EsPlaneta && idDelSol.HasValue)
                 {
@@ -259,11 +268,8 @@ public class ObjetoService
 
                 if (idPadre.HasValue)
                 {
-                    // ⚠️ IMPORTANTE: Como no me pasaste la clase "Relacion.cs", sigo usando "PadreId" e "HijoId".
-                    // Si esto tira error, borra "PadreId", escribe un punto "." y selecciona lo que te sugiera Visual Studio.
                     bool existeRelacion = await _db.Relaciones.AnyAsync(r =>
-                        r.OrigenId == idPadre.Value &&
-                        r.DestinoId == idHijo);
+                        r.OrigenId == idPadre.Value && r.DestinoId == idHijo);
 
                     if (!existeRelacion)
                     {
