@@ -201,3 +201,89 @@ feat(ui): integrar vista Sistema Solar 3D con Three.js
 ```
 
 **No modificar:** `ObjetoService.cs`, `GrafoService.cs`, archivos de estructuras de datos, `schema.sql`, `seed.sql`
+
+---
+
+## Tarea adicional — Paginación en el catálogo
+
+El catálogo en `Views/Objetos/Index.cshtml` muestra todos los objetos de una vez (530+). Agregar paginación.
+
+### Comportamiento esperado
+
+- Mostrar **20 objetos por página**
+- Controles: `« Anterior` / `Siguiente »` + indicador `Página X de Y`
+- La paginación respeta el filtro activo por tipo (Planeta, Asteroide, etc.)
+- URL refleja la página: `/?tipo=Planeta&pagina=2`
+
+### Cambios requeridos
+
+**1. `ObjetosController.cs` — acción `Index`:**
+
+```csharp
+public async Task<IActionResult> Index(string? tipo, int pagina = 1)
+{
+    const int porPagina = 20;
+    var todos = await _service.ObtenerTodosAsync(tipo);
+    var lista = todos.ToList();
+
+    var vm = new CatalogoViewModel
+    {
+        Objetos    = lista.Skip((pagina - 1) * porPagina).Take(porPagina),
+        Tipos      = await _service.ObtenerTiposAsync(),
+        TipoActivo = tipo,
+        PaginaActual   = pagina,
+        TotalPaginas   = (int)Math.Ceiling(lista.Count / (double)porPagina),
+        TotalObjetos   = lista.Count
+    };
+    return View(vm);
+}
+```
+
+**2. `Models/ViewModels/CatalogoViewModel.cs` — agregar propiedades:**
+
+```csharp
+public int PaginaActual  { get; set; } = 1;
+public int TotalPaginas  { get; set; } = 1;
+public int TotalObjetos  { get; set; } = 0;
+```
+
+**3. `Views/Objetos/Index.cshtml` — agregar controles de paginación** al final de la lista de objetos:
+
+```html
+@if (Model.TotalPaginas > 1)
+{
+    <nav class="d-flex justify-content-between align-items-center mt-4">
+        <small class="text-muted">
+            @Model.TotalObjetos objetos — página @Model.PaginaActual de @Model.TotalPaginas
+        </small>
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(Model.PaginaActual <= 1 ? "disabled" : "")">
+                <a class="page-link bg-dark text-light border-secondary"
+                   asp-action="Index"
+                   asp-route-tipo="@Model.TipoActivo"
+                   asp-route-pagina="@(Model.PaginaActual - 1)">«</a>
+            </li>
+            <li class="page-item @(Model.PaginaActual >= Model.TotalPaginas ? "disabled" : "")">
+                <a class="page-link bg-dark text-light border-secondary"
+                   asp-action="Index"
+                   asp-route-tipo="@Model.TipoActivo"
+                   asp-route-pagina="@(Model.PaginaActual + 1)">»</a>
+            </li>
+        </ul>
+    </nav>
+}
+```
+
+### Checklist paginación
+
+- [ ] Parámetro `pagina` en acción `Index`
+- [ ] Propiedades `PaginaActual`, `TotalPaginas`, `TotalObjetos` en ViewModel
+- [ ] Controles « / » visibles en catálogo
+- [ ] Filtro por tipo + paginación funcionan juntos
+- [ ] URL cambia al navegar páginas
+
+### Commit sugerido
+
+```
+feat(ui): paginación en catálogo (20 por página)
+```
