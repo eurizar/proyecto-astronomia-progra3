@@ -6,6 +6,8 @@ namespace AstronomiaApp.Controllers;
 
 public class ObjetosController : Controller
 {
+    private const int TamanoPagina = 50;
+
     private readonly ObjetoService _service;
     private readonly IConfiguration _configuration;
 
@@ -16,14 +18,18 @@ public class ObjetosController : Controller
     }
 
     // GET /Objetos  o  /
-    public async Task<IActionResult> Index(string? tipo)
+    public async Task<IActionResult> Index(string? tipo, int pagina = 1)
     {
-        var objetos = await _service.ObtenerTodosAsync(tipo);
+        var objetos = (await _service.ObtenerTodosAsync(tipo)).ToList();
         var tipos = await _service.ObtenerTiposAsync();
+
+        int totalPaginas = Math.Max(1, (int)Math.Ceiling((double)objetos.Count / TamanoPagina));
+        pagina = Math.Clamp(pagina, 1, totalPaginas);
+        var pagItems = objetos.Skip((pagina - 1) * TamanoPagina).Take(TamanoPagina);
 
         var vm = new CatalogoViewModel
         {
-            Objetos = objetos.Select(o => new ObjetoViewModel
+            Objetos = pagItems.Select(o => new ObjetoViewModel
             {
                 Id = o.Id,
                 Nombre = o.Nombre,
@@ -35,7 +41,9 @@ public class ObjetosController : Controller
                 Sistema = o.Sistema?.Nombre,
             }),
             FiltroTipo = tipo,
-            Total = objetos.Count()
+            Total = objetos.Count,
+            PaginaActual = pagina,
+            TamanoPagina = TamanoPagina
         };
 
         ViewBag.Tipos = tipos;
@@ -94,14 +102,18 @@ public class ObjetosController : Controller
     }
 
     // GET /Objetos/Ordenar?por=distancia&direccion=asc&tipo=Planeta
-    public async Task<IActionResult> Ordenar(string por = "distancia", string direccion = "asc", string? tipo = null)
+    public async Task<IActionResult> Ordenar(string por = "distancia", string direccion = "asc", string? tipo = null, int pagina = 1)
     {
-        var objetos = await _service.OrdenarAsync(por, descendente: direccion == "desc", tipo: tipo);
+        var objetos = (await _service.OrdenarAsync(por, descendente: direccion == "desc", tipo: tipo)).ToList();
         var tipos = await _service.ObtenerTiposAsync();
+
+        int totalPaginas = Math.Max(1, (int)Math.Ceiling((double)objetos.Count / TamanoPagina));
+        pagina = Math.Clamp(pagina, 1, totalPaginas);
+        var pagItems = objetos.Skip((pagina - 1) * TamanoPagina).Take(TamanoPagina);
 
         var vm = new CatalogoViewModel
         {
-            Objetos = objetos.Select(o => new ObjetoViewModel
+            Objetos = pagItems.Select(o => new ObjetoViewModel
             {
                 Id = o.Id,
                 Nombre = o.Nombre,
@@ -110,11 +122,14 @@ public class ObjetosController : Controller
                 RadioKm = o.RadioKm,
                 DistanciaTierraAl = o.DistanciaTierraAl,
                 TemperaturaK = o.TemperaturaK,
+                Sistema = o.Sistema?.Nombre,
             }),
             OrdenPor = por,
             Direccion = direccion,
             FiltroTipo = tipo,
-            Total = objetos.Count()
+            Total = objetos.Count,
+            PaginaActual = pagina,
+            TamanoPagina = TamanoPagina
         };
 
         ViewBag.Tipos = tipos;

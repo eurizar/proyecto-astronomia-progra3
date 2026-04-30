@@ -22,6 +22,9 @@ public class CatalogoViewModel
     public string? OrdenPor { get; set; }
     public string Direccion { get; set; } = "asc";
     public int Total { get; set; }
+    public int PaginaActual { get; set; } = 1;
+    public int TamanoPagina { get; set; } = 50;
+    public int TotalPaginas => Math.Max(1, (int)Math.Ceiling((double)Total / Math.Max(1, TamanoPagina)));
 }
 
 public class BusquedaViewModel
@@ -43,6 +46,8 @@ public class NodoGrafoViewModel
     public int Id { get; set; }
     public string Nombre { get; set; } = "";
     public string Tipo { get; set; } = "";
+    public string? Descripcion { get; set; }
+    public string? Abreviatura { get; set; }
 }
 
 public class AristaGrafoViewModel

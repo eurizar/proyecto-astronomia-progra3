@@ -1,108 +1,297 @@
 @model AstronomiaApp.Models.ViewModels.CatalogoViewModel
+@using AstronomiaApp.Models
+@using System.Globalization
 @{
-    ViewData["Title"] = "Catálogo de Objetos";
-    var tipos = ViewBag.Tipos as IEnumerable<AstronomiaApp.Models.TipoObjeto> ?? Enumerable.Empty<AstronomiaApp.Models.TipoObjeto>();
+    ViewData["Title"] = "Catálogo Astronómico";
+    var tipos = ViewBag.Tipos as IEnumerable<TipoObjeto> ?? Enumerable.Empty<TipoObjeto>();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+
+    int paginaActual = Model.PaginaActual;
+    int totalPaginas = Math.Max(1, Model.TotalPaginas);
+    int desde = Model.Total == 0 ? 0 : (paginaActual - 1) * Model.TamanoPagina + 1;
+    int hasta = Math.Min(paginaActual * Model.TamanoPagina, Model.Total);
+
+    var es = CultureInfo.GetCultureInfo("es-ES");
+
+    string Glyph(string? tipo) => (tipo ?? "").ToLowerInvariant() switch
+    {
+        "estrella" => "✦",
+        "planeta" => "◯",
+        "satélite" => "☾",
+        "satelite" => "☾",
+        "asteroide" => "◆",
+        "cometa" => "☄",
+        "planeta enano" => "◌",
+        _ => "•"
+    };
+
+    string FormatN(double? v, int dec = 0) =>
+        v.HasValue ? v.Value.ToString("N" + dec, es) : "—";
+
+    // Compact pager: first, last, ±2 around current
+    var pageSet = new SortedSet<int> { 1, totalPaginas };
+    for (int p = paginaActual - 2; p <= paginaActual + 2; p++)
+        if (p >= 1 && p <= totalPaginas) pageSet.Add(p);
+    var pages = pageSet.ToList();
+
+    string PgrLink(int p) => Url.Action(currentAction, "Objetos", new
+    {
+        tipo = Model.FiltroTipo,
+        pagina = p,
+        por = Model.OrdenPor,
+        direccion = Model.Direccion
+    }) ?? "#";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="text-warning mb-0">Catálogo Astronómico</h2>
-    <span class="badge bg-secondary">@Model.Total objetos</span>
-</div>
+<link rel="stylesheet" href="~/css/catalogo.css" asp-append-version="true" />
 
-<!-- Filtros y ordenamiento -->
-<div class="card bg-secondary border-0 mb-3">
-    <div class="card-body py-2">
-        <div class="row g-2 align-items-center">
-            <div class="col-auto">
-                <strong class="text-light small">Filtrar por tipo:</strong>
+<div class="catalogo-atmos" aria-hidden="true"></div>
+
+<section class="catalogo-page">
+
+    @* ── Header ────────────────────────────────────────────────── *@
+    <header class="cat-header">
+        <div class="cat-meta">
+            <span class="cat-meta-item">α 12ʰ 34ᵐ 18ˢ</span>
+            <span class="cat-meta-item">δ −23°45′12″</span>
+            <span class="cat-meta-item">Epoch J2000.0</span>
+            <span class="cat-meta-item">Vol. I · Bitácora</span>
+            <span class="cat-meta-item">UMG · Cobán</span>
+        </div>
+
+        <div class="cat-titlebar">
+            <svg class="reticle" viewBox="0 0 72 72" fill="none" stroke="currentColor" stroke-width="0.8" aria-hidden="true">
+                <circle cx="36" cy="36" r="32" />
+                <circle cx="36" cy="36" r="22" stroke-dasharray="2 4" />
+                <circle cx="36" cy="36" r="12" stroke-dasharray="1 2" />
+                <circle cx="36" cy="36" r="2" fill="currentColor" stroke="none" />
+                <line x1="36" y1="0"  x2="36" y2="14" />
+                <line x1="36" y1="58" x2="36" y2="72" />
+                <line x1="0"  y1="36" x2="14" y2="36" />
+                <line x1="58" y1="36" x2="72" y2="36" />
+                <line x1="11" y1="11" x2="20" y2="20" />
+                <line x1="52" y1="52" x2="61" y2="61" />
+                <line x1="61" y1="11" x2="52" y2="20" />
+                <line x1="20" y1="52" x2="11" y2="61" />
+            </svg>
+
+            <h1 class="cat-title">
+                <span class="cat-title-pre">Catálogo · Observatorio</span>
+                <span class="cat-title-main">Astronómico</span>
+            </h1>
+
+            <div class="cat-counter">
+                <span class="counter-value">@Model.Total.ToString("N0", es)</span>
+                <span class="counter-label">objetos · página @paginaActual / @totalPaginas</span>
             </div>
-            <div class="col-auto">
-                <a asp-action="Index" class="btn btn-sm @(Model.FiltroTipo == null ? "btn-warning" : "btn-outline-light")">Todos</a>
-            </div>
-            @foreach (var tipo in tipos)
-            {
-                <div class="col-auto">
-                    <a asp-action="Index" asp-route-tipo="@tipo.Nombre"
-                       class="btn btn-sm @(Model.FiltroTipo == tipo.Nombre ? "btn-warning" : "btn-outline-light")">
-                        @tipo.Nombre
-                    </a>
-                </div>
-            }
-            <div class="col-auto ms-auto">
-                <span class="text-muted small">Ordenar: </span>
-                @foreach (var campo in new[] { "distancia", "masa", "radio", "temperatura" })
+        </div>
+
+        <div class="cat-divider"></div>
+    </header>
+
+    @* ── Filters & Sort ───────────────────────────────────────── *@
+    <section class="filter-bar">
+        <div class="filter-section">
+            <span class="filter-label">Clase<br />observada</span>
+            <div class="filter-chips">
+                <a asp-action="Index"
+                   class="chip @(Model.FiltroTipo == null ? "active" : "")">
+                    <span class="chip-glyph">✱</span>Todos
+                </a>
+                @foreach (var tipo in tipos)
                 {
-                    <a asp-action="Ordenar" asp-route-por="@campo" asp-route-tipo="@Model.FiltroTipo"
-                       asp-route-direccion="@(Model.OrdenPor == campo && Model.Direccion == "asc" ? "desc" : "asc")"
-                       class="btn btn-sm btn-outline-info me-1 @(Model.OrdenPor == campo ? "active" : "")">
-                        @campo @(Model.OrdenPor == campo ? (Model.Direccion == "asc" ? "↑" : "↓") : "")
+                    <a asp-action="Index" asp-route-tipo="@tipo.Nombre"
+                       class="chip @(Model.FiltroTipo == tipo.Nombre ? "active" : "")">
+                        <span class="chip-glyph">@Glyph(tipo.Nombre)</span>@tipo.Nombre
                     </a>
                 }
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Tabla de objetos -->
-@if (!Model.Objetos.Any())
-{
-    <div class="alert alert-info">
-        No hay objetos cargados.
-        <button class="btn btn-sm btn-warning ms-2" onclick="importarDatos()">Importar desde API</button>
-    </div>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table table-dark table-hover table-sm">
-            <thead class="table-warning text-dark">
-                <tr>
-                    <th>Nombre</th>
-                    <th>Tipo</th>
-                    <th>Radio (km)</th>
-                    <th>Distancia (UA)</th>
-                    <th>Temp. (K)</th>
-                    <th>Sistema</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var obj in Model.Objetos)
+        <div class="filter-section">
+            <span class="filter-label">Orden<br />ascendente</span>
+            <div class="sort-chips">
+                @foreach (var campo in new[] { "distancia", "masa", "radio", "temperatura" })
                 {
-                    <tr>
-                        <td class="fw-bold">@obj.Nombre</td>
-                        <td><span class="badge bg-info text-dark">@obj.Tipo</span></td>
-                        <td>@(obj.RadioKm.HasValue ? obj.RadioKm.Value.ToString("N0") : "—")</td>
-                        <td>@(obj.DistanciaTierraAl.HasValue ? obj.DistanciaTierraAl.Value.ToString("N4") : "—")</td>
-                        <td>@(obj.TemperaturaK.HasValue ? obj.TemperaturaK.Value.ToString("N0") : "—")</td>
-                        <td class="text-muted small">@(obj.Sistema ?? "—")</td>
-                        <td>
-                            <a asp-action="Detalle" asp-route-id="@obj.Id"
-                               class="btn btn-xs btn-outline-warning btn-sm">Ver</a>
-                        </td>
-                    </tr>
+                    var isActive = Model.OrdenPor == campo;
+                    var arrow = isActive ? (Model.Direccion == "asc" ? "↑" : "↓") : "";
+                    var nextDir = isActive && Model.Direccion == "asc" ? "desc" : "asc";
+                    <a asp-action="Ordenar"
+                       asp-route-por="@campo"
+                       asp-route-tipo="@Model.FiltroTipo"
+                       asp-route-direccion="@nextDir"
+                       class="chip chip-sort @(isActive ? "active" : "")">
+                        @campo<span class="chip-arrow">@arrow</span>
+                    </a>
                 }
-            </tbody>
-        </table>
-    </div>
-}
+            </div>
+        </div>
+    </section>
+
+    @* ── Logbook ──────────────────────────────────────────────── *@
+    @if (!Model.Objetos.Any())
+    {
+        <div class="empty-state">
+            <h3>Sin registros en bitácora</h3>
+            <p>No hay objetos catalogados en este filtro</p>
+            <button class="empty-action" onclick="importarDatos(this)">
+                Iniciar importación de datos
+            </button>
+        </div>
+    }
+    else
+    {
+        <section class="logbook">
+            <div class="logbook-headers">
+                <div class="lb-col col-num">№ Reg.</div>
+                <div class="lb-col"></div>
+                <div class="lb-col">Designación</div>
+                <div class="lb-col">Clase</div>
+                <div class="lb-col col-radio lb-num-r">Radio · km</div>
+                <div class="lb-col col-distance lb-num-r">Dist. · UA</div>
+                <div class="lb-col col-temp lb-num-r">Temp · K</div>
+                <div class="lb-col col-system">Sistema</div>
+                <div class="lb-col"></div>
+            </div>
+
+            @{ int idx = 0; }
+            @foreach (var obj in Model.Objetos)
+            {
+                idx++;
+                int registro = (paginaActual - 1) * Model.TamanoPagina + idx;
+                <article class="entry">
+                    <div class="lb-col col-num lb-num">№ @registro.ToString("D4")</div>
+                    <div class="lb-col lb-glyph" title="@obj.Tipo">@Glyph(obj.Tipo)</div>
+                    <div class="lb-col lb-name">@obj.Nombre</div>
+                    <div class="lb-col">
+                        <span class="lb-type-tag">@obj.Tipo</span>
+                    </div>
+                    <div class="lb-col col-radio lb-num-r">
+                        <span class="lb-num-data @(!obj.RadioKm.HasValue ? "empty" : "")">@FormatN(obj.RadioKm)</span>
+                    </div>
+                    <div class="lb-col col-distance lb-num-r">
+                        <span class="lb-num-data @(!obj.DistanciaTierraAl.HasValue ? "empty" : "")">@FormatN(obj.DistanciaTierraAl, 4)</span>
+                    </div>
+                    <div class="lb-col col-temp lb-num-r">
+                        <span class="lb-num-data @(!obj.TemperaturaK.HasValue ? "empty" : "")">@FormatN(obj.TemperaturaK)</span>
+                    </div>
+                    <div class="lb-col col-system">@(obj.Sistema ?? "—")</div>
+                    <div class="lb-col">
+                        <span class="lb-action">
+                            <a asp-action="Detalle" asp-route-id="@obj.Id">Ver</a>
+                        </span>
+                    </div>
+                </article>
+            }
+        </section>
+
+        @* ── Pagination ──────────────────────────────────────── *@
+        <nav class="pager" aria-label="Paginación del catálogo">
+            <div class="pager-meta">
+                Mostrando <strong>@desde — @hasta</strong> de <strong>@Model.Total.ToString("N0", es)</strong><br />
+                Página <strong>@paginaActual</strong> de <strong>@totalPaginas</strong> · <strong>@Model.TamanoPagina</strong> por página
+            </div>
+            <div class="pager-controls">
+                @if (paginaActual > 1)
+                {
+                    <a class="pgr-btn" href="@PgrLink(1)" title="Primera página" aria-label="Primera">‹‹</a>
+                    <a class="pgr-btn" href="@PgrLink(paginaActual - 1)" title="Anterior" aria-label="Anterior">‹</a>
+                }
+                else
+                {
+                    <span class="pgr-btn" aria-disabled="true">‹‹</span>
+                    <span class="pgr-btn" aria-disabled="true">‹</span>
+                }
+
+                @{ int prev = 0; }
+                @foreach (var p in pages)
+                {
+                    if (prev > 0 && p - prev > 1)
+                    {
+                        <span class="pgr-ellipsis">···</span>
+                    }
+                    if (p == paginaActual)
+                    {
+                        <span class="pgr-page current" aria-current="page">@p</span>
+                    }
+                    else
+                    {
+                        <a class="pgr-page" href="@PgrLink(p)" aria-label="Página @p">@p</a>
+                    }
+                    prev = p;
+                }
+
+                @if (paginaActual < totalPaginas)
+                {
+                    <a class="pgr-btn" href="@PgrLink(paginaActual + 1)" title="Siguiente" aria-label="Siguiente">›</a>
+                    <a class="pgr-btn" href="@PgrLink(totalPaginas)" title="Última página" aria-label="Última">››</a>
+                }
+                else
+                {
+                    <span class="pgr-btn" aria-disabled="true">›</span>
+                    <span class="pgr-btn" aria-disabled="true">››</span>
+                }
+            </div>
+        </nav>
+    }
+</section>
 
 @section Scripts {
-<script>
-async function importarDatos() {
-    const btn = event.target;
-    btn.disabled = true;
-    btn.textContent = 'Importando...';
-    try {
-        const r = await fetch('/api/admin/importar', { method: 'POST' });
-        const d = await r.json();
-        alert(`Importados: ${d.importados}, Actualizados: ${d.actualizados}, Errores: ${d.errores}`);
-        location.reload();
-    } catch(e) {
-        alert('Error al importar: ' + e.message);
-        btn.disabled = false;
-        btn.textContent = 'Importar desde API';
-    }
-}
-</script>
+    <script>
+        async function importarDatos(btn) {
+            btn.disabled = true;
+            btn.textContent = 'Importando...';
+            try {
+                const r = await fetch('/api/admin/importar', { method: 'POST' });
+                const d = await r.json();
+                alert(`Importados: ${d.importados}, Actualizados: ${d.actualizados}, Errores: ${d.errores}`);
+                location.reload();
+            } catch (e) {
+                alert('Error al importar: ' + e.message);
+                btn.disabled = false;
+                btn.textContent = 'Iniciar importación de datos';
+            }
+        }
+
+        // ── Warp: misma estética del sistema solar ────────────────────
+        function createCatalogWarp(colorMix) {
+            const ov = document.createElement('div');
+            ov.className = 'warp-overlay';
+
+            for (let i = 0; i < 80; i++) {
+                const angle = Math.random() * 360;
+                const delay = Math.random() * 200;
+                const cx = 50 + (Math.random() - 0.5) * 10;
+                const cy = 50 + (Math.random() - 0.5) * 10;
+                const c = Math.random() > 0.5 ? '#f3c87c' : '#f3ead4';
+                const line = document.createElement('div');
+                line.className = 'warp-line';
+                line.style.cssText = `
+                    top:${cy}%; left:${cx}%;
+                    background:linear-gradient(to bottom, transparent, ${c}, transparent);
+                    transform:rotate(${angle}deg);
+                    animation: warp-line 0.6s ${delay}ms ease-in forwards;
+                `;
+                ov.appendChild(line);
+            }
+            const flash = document.createElement('div');
+            flash.className = 'warp-flash';
+            ov.appendChild(flash);
+
+            document.body.appendChild(ov);
+            return ov;
+        }
+
+        // Intercepta clics en "Ver" del logbook
+        document.addEventListener('click', function (e) {
+            const link = e.target.closest('.lb-action a');
+            if (!link) return;
+            const href = link.getAttribute('href');
+            if (!href || link.dataset.warping) return;
+            e.preventDefault();
+            link.dataset.warping = '1';
+            createCatalogWarp();
+            setTimeout(() => { window.location.href = href; }, 650);
+        });
+    </script>
 }
