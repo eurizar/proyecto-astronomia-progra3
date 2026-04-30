@@ -14,10 +14,17 @@
     'Galaxia': '#a855f7',
     'Satélite': '#94a3b8',
     'Satelite': '#94a3b8',
-    'Constelación': '#38bdf8',
-    'Constelacion': '#38bdf8',
+    'Asteroide': '#a07d35',
+    'Cometa': '#7eb6cd',
+    'Planeta Enano': '#cbd5e1',
+    'Constelación': '#7eb6cd',
+    'Constelacion': '#7eb6cd',
     'default': '#94a3b8'
   };
+
+  // ID offset usado por GrafoService.cs para nodos de Constelación
+  const CONSTELACION_OFFSET = 1_000_000;
+  const esConstelacion = (id) => id >= CONSTELACION_OFFSET;
 
   let nodos = {};
   let offset = { x: 0, y: 0 };
@@ -288,8 +295,15 @@
       const color = COLORES_TIPO[n.tipo] || COLORES_TIPO.default;
       const hover = hoveredId === n.id;
       const resaltado = highlightedNames.includes(n.nombre);
+      const isConst = esConstelacion(n.id);
 
-      const radio = hover ? 10 : resaltado ? 9 : 6;
+      // Constelaciones: nodos hub más grandes, con anillo dorado
+      let radio;
+      if (isConst) {
+        radio = hover ? 16 : resaltado ? 14 : 12;
+      } else {
+        radio = hover ? 10 : resaltado ? 9 : 6;
+      }
 
       const glow = ctx.createRadialGradient(n.x, n.y, 1, n.x, n.y, radio * 2.5);
       glow.addColorStop(0, color);
@@ -306,21 +320,63 @@
       ctx.fillStyle = color;
       ctx.fill();
 
+      // Anillo dorado decorativo solo en constelaciones
+      if (isConst) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, (radio + 4) / scale, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(212,166,87,0.85)';
+        ctx.lineWidth = 1.4 / scale;
+        ctx.stroke();
+
+        // Cruz interior tipo retícula
+        ctx.beginPath();
+        ctx.moveTo(n.x - radio * 0.5 / scale, n.y);
+        ctx.lineTo(n.x + radio * 0.5 / scale, n.y);
+        ctx.moveTo(n.x, n.y - radio * 0.5 / scale);
+        ctx.lineTo(n.x, n.y + radio * 0.5 / scale);
+        ctx.strokeStyle = 'rgba(6,8,18,0.9)';
+        ctx.lineWidth = 1.2 / scale;
+        ctx.stroke();
+      }
+
       ctx.strokeStyle = hover || resaltado ? '#fff' : 'rgba(255,255,255,.75)';
       ctx.lineWidth = (hover || resaltado ? 2 : 1) / scale;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, radio / scale, 0, Math.PI * 2);
       ctx.stroke();
 
-      if (scale > 0.32 || hover || resaltado) {
-        ctx.fillStyle = hover || resaltado ? '#fff' : '#e5e7eb';
-        ctx.font = `${hover ? 13 / scale : 11 / scale}px Segoe UI, Arial, sans-serif`;
+      // Constelaciones siempre muestran su nombre
+      if (scale > 0.32 || hover || resaltado || isConst) {
+        ctx.fillStyle = hover || resaltado ? '#fff' : (isConst ? '#f3c87c' : '#e5e7eb');
+        const fontSize = isConst ? (hover ? 14 : 12) : (hover ? 13 : 11);
+        const weight = isConst ? '600' : '400';
+        ctx.font = `${weight} ${fontSize / scale}px 'JetBrains Mono', monospace`;
         ctx.shadowColor = 'rgba(0,0,0,.95)';
         ctx.shadowBlur = 5;
-        ctx.fillText(n.nombre, n.x + 10 / scale, n.y + 4 / scale);
+        const labelX = n.x + (radio + 6) / scale;
+        ctx.fillText(n.nombre, labelX, n.y + 4 / scale);
         ctx.shadowBlur = 0;
       }
     });
 
     ctx.restore();
+  }
+
+  function envolverTexto(ctx, texto, maxAncho) {
+    const palabras = texto.split(' ');
+    const lineas = [];
+    let actual = '';
+    palabras.forEach(p => {
+      const test = actual ? actual + ' ' + p : p;
+      if (ctx.measureText(test).width > maxAncho && actual) {
+        lineas.push(actual);
+        actual = p;
+      } else {
+        actual = test;
+      }
+    });
+    if (actual) lineas.push(actual);
+    return lineas;
   }
 
   function dibujarTooltip() {
@@ -329,28 +385,82 @@
     const n = nodos[hoveredId];
     if (!n) return;
 
+    const isConst = esConstelacion(n.id);
     const x = n.x * scale + offset.x;
     const y = n.y * scale + offset.y;
 
-    ctx.font = '13px Segoe UI, Arial';
+    if (isConst) {
+      // Tooltip extendido con descripción
+      const maxAncho = 280;
+      ctx.font = "13px 'JetBrains Mono', Segoe UI, Arial";
 
+      const titulo = n.nombre.toUpperCase();
+      const subtitulo = n.abreviatura ? `Constelación · ${n.abreviatura}` : 'Constelación';
+      const desc = n.descripcion || 'Sin descripción registrada.';
+
+      ctx.font = "11px 'JetBrains Mono', Segoe UI, Arial";
+      const lineasDesc = envolverTexto(ctx, desc, maxAncho - 24).slice(0, 4);
+
+      const altoTitulo = 24;
+      const altoSub = 18;
+      const altoDesc = lineasDesc.length * 16 + 10;
+      const altoTotal = altoTitulo + altoSub + altoDesc + 18;
+
+      // Box
+      ctx.fillStyle = 'rgba(6,8,18,.94)';
+      ctx.strokeStyle = 'rgba(212,166,87,.7)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, x + 18, y - altoTotal - 8, maxAncho, altoTotal, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Barra dorada izquierda
+      ctx.fillStyle = '#d4a657';
+      ctx.fillRect(x + 18, y - altoTotal - 8, 3, altoTotal);
+
+      // Título
+      ctx.fillStyle = '#f3c87c';
+      ctx.font = "600 13px 'JetBrains Mono', Segoe UI, Arial";
+      ctx.fillText(titulo, x + 32, y - altoTotal + 10);
+
+      // Subtítulo
+      ctx.fillStyle = '#a39b85';
+      ctx.font = "10px 'JetBrains Mono', Segoe UI, Arial";
+      ctx.fillText(subtitulo, x + 32, y - altoTotal + 28);
+
+      // Descripción
+      ctx.fillStyle = '#d4cbb0';
+      ctx.font = "italic 12px 'Cormorant Garamond', Georgia, serif";
+      lineasDesc.forEach((linea, i) => {
+        ctx.fillText(linea, x + 32, y - altoTotal + 50 + i * 16);
+      });
+
+      return;
+    }
+
+    // Tooltip normal (objeto)
+    ctx.font = "13px 'JetBrains Mono', Segoe UI, Arial";
     const texto1 = n.nombre;
     const texto2 = n.tipo || 'Objeto astronómico';
     const ancho = Math.max(ctx.measureText(texto1).width, ctx.measureText(texto2).width) + 28;
 
-    ctx.fillStyle = 'rgba(2,6,23,.9)';
-    ctx.strokeStyle = 'rgba(250,204,21,.55)';
+    ctx.fillStyle = 'rgba(6,8,18,.92)';
+    ctx.strokeStyle = 'rgba(212,166,87,.5)';
     ctx.lineWidth = 1;
-
-    roundRect(ctx, x + 16, y - 48, ancho, 48, 12);
+    roundRect(ctx, x + 16, y - 50, ancho, 50, 4);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#facc15';
-    ctx.fillText(texto1, x + 30, y - 28);
+    ctx.fillStyle = '#d4a657';
+    ctx.fillRect(x + 16, y - 50, 3, 50);
 
-    ctx.fillStyle = '#cbd5e1';
-    ctx.fillText(texto2, x + 30, y - 10);
+    ctx.fillStyle = '#f3c87c';
+    ctx.font = "600 13px 'JetBrains Mono', Segoe UI, Arial";
+    ctx.fillText(texto1, x + 28, y - 30);
+
+    ctx.fillStyle = '#a39b85';
+    ctx.font = "10px 'JetBrains Mono', Segoe UI, Arial";
+    ctx.fillText(texto2.toUpperCase(), x + 28, y - 12);
   }
 
   function roundRect(ctx, x, y, w, h, r) {
@@ -405,13 +515,16 @@
       }
     });
 
-    canvas.style.cursor = hoveredId ? 'pointer' : 'grab';
+    canvas.style.cursor = hoveredId
+      ? (esConstelacion(hoveredId) ? 'help' : 'pointer')
+      : 'grab';
   });
 
   canvas.addEventListener('click', () => {
-    if (hoveredId) {
-      window.location.href = `/Objetos/Detalle/${hoveredId}`;
-    }
+    if (!hoveredId) return;
+    // Constelaciones: no navegar — el tooltip extendido ya muestra su info
+    if (esConstelacion(hoveredId)) return;
+    window.location.href = `/Objetos/Detalle/${hoveredId}`;
   });
 
   canvas.addEventListener('mousedown', e => {
@@ -423,7 +536,9 @@
   canvas.addEventListener('mouseup', () => {
     dragging = false;
     lastMouse = null;
-    canvas.style.cursor = hoveredId ? 'pointer' : 'grab';
+    canvas.style.cursor = hoveredId
+      ? (esConstelacion(hoveredId) ? 'help' : 'pointer')
+      : 'grab';
   });
 
   canvas.addEventListener('mouseleave', () => {
@@ -460,18 +575,61 @@
     highlightedNames = Array.isArray(ruta) ? ruta : [];
   };
 
+  let simulacionLista = false;
+
   function loop(tiempo) {
     if (tick < 180) {
       simularPaso();
       tick++;
+      if (tick === 180) simulacionLista = true;
     }
 
     dibujar(tiempo);
     requestAnimationFrame(loop);
   }
 
+  // ── Destacar nodo desde querystring (?destacar=<nombre>&via=<constelacion>) ──
+  function aplicarDestacarDesdeURL() {
+    const params = new URLSearchParams(location.search);
+    const destacar = params.get('destacar');
+    if (!destacar) return;
+    const via = params.get('via');
+
+    function intentar() {
+      if (!simulacionLista) {
+        requestAnimationFrame(intentar);
+        return;
+      }
+
+      const nodo = Object.values(nodos).find(n => n.nombre === destacar);
+      if (!nodo) {
+        const div = document.getElementById('resultado-ruta');
+        if (div) div.innerHTML = `<span class="text-danger">Nodo "${destacar}" no encontrado en el grafo.</span>`;
+        return;
+      }
+
+      // Centrar cámara en el nodo
+      offset.x = canvas.width / 2 - nodo.x * scale;
+      offset.y = canvas.height / 2 - nodo.y * scale;
+
+      // Resaltar (reusa lógica de aristas)
+      highlightedNames = via ? [destacar, via] : [destacar];
+
+      // Mensaje en panel de ruta
+      const div = document.getElementById('resultado-ruta');
+      if (div) {
+        div.innerHTML = via
+          ? `<strong>Destacando:</strong> ${destacar} &nbsp;↔&nbsp; <strong>${via}</strong> <span style="opacity:.6">(constelación)</span>`
+          : `<strong>Destacando:</strong> ${destacar}`;
+      }
+    }
+
+    intentar();
+  }
+
   ajustarTamanio();
   crearEstrellas();
   inicializar();
   loop(0);
+  aplicarDestacarDesdeURL();
 })();

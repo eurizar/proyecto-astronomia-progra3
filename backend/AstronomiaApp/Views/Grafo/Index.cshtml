@@ -4,93 +4,203 @@
 }
 
 <style>
-    body {
-        background: radial-gradient(circle at top, #111827 0%, #020617 55%, #000 100%);
-    }
+    @@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=JetBrains+Mono:wght@@300;400;500;600&display=swap');
 
     .grafo-page {
-        color: #e5e7eb;
+        --cosmos-0: #060812;
+        --cosmos-1: #11151f;
+        --cream: #f3ead4;
+        --cream-2: #d4cbb0;
+        --cream-3: #a39b85;
+        --muted: #6a6657;
+        --gold: #d4a657;
+        --gold-bright: #f3c87c;
+        --gold-deep: #a07d35;
+        --cyan: #7eb6cd;
+        --rust: #c45046;
+        --line: #2a3346;
+
+        position: relative;
+        z-index: 1;
+        color: var(--cream);
+        font-family: 'Cormorant Garamond', 'Spectral', Georgia, serif;
+        padding: 1.5rem 0 4rem;
     }
+
+    body.bg-dark { background: #060812 !important; }
+
+    .grafo-atmos {
+        position: fixed; inset: 0; z-index: -1; pointer-events: none;
+        background:
+            radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,166,87,.06), transparent 60%),
+            radial-gradient(ellipse 40% 35% at 90% 80%, rgba(126,182,205,.04), transparent 70%),
+            #060812;
+    }
+    .grafo-atmos::after {
+        content: ''; position: absolute; inset: 0;
+        background-image:
+            radial-gradient(1px 1px at 18% 28%, rgba(243,234,212,.55), transparent 50%),
+            radial-gradient(1.5px 1.5px at 82% 22%, rgba(243,200,124,.7), transparent 60%),
+            radial-gradient(1px 1px at 56% 88%, rgba(243,234,212,.5), transparent 50%);
+        background-size: 800px 800px, 1100px 1100px, 600px 600px;
+        opacity: .55;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    .grafo-meta {
+        display: flex; flex-wrap: wrap; gap: 1.75rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .78rem; letter-spacing: .16em; text-transform: uppercase;
+        color: var(--cream-3);
+        margin-bottom: 1.5rem;
+    }
+    .grafo-meta-item { display: inline-flex; align-items: center; gap: .5rem; }
+    .grafo-meta-item::before { content: '◦'; color: var(--gold); font-size: .85rem; }
 
     .grafo-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 18px;
-        gap: 16px;
+        display: grid; grid-template-columns: auto 1fr auto;
+        align-items: end; gap: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--line);
     }
 
+    .grafo-header svg.reticle {
+        width: 56px; height: 56px;
+        color: var(--gold); opacity: .85; flex-shrink: 0;
+    }
+
+    .grafo-title-pre {
+        display: block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .82rem; letter-spacing: .28em; text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: .55rem; font-weight: 500;
+    }
     .grafo-title {
-        color: #ffc107;
-        font-weight: 800;
-        text-shadow: 0 0 18px rgba(255, 193, 7, .55);
-        margin: 0;
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic; font-weight: 500;
+        font-size: 3.5rem; line-height: .95;
+        color: var(--cream);
+        letter-spacing: -.02em; margin: 0;
+        text-shadow: 0 0 40px rgba(243,234,212,.08);
     }
 
-    .grafo-badge {
-        padding: 10px 18px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .25);
-        background: rgba(15, 23, 42, .8);
-        box-shadow: 0 0 25px rgba(59, 130, 246, .18);
-        color: #cbd5e1;
+    .grafo-counter {
+        text-align: right;
+        font-family: 'JetBrains Mono', monospace;
+        border-left: 1px solid var(--line);
+        padding-left: 1.5rem;
+    }
+    .grafo-counter-value {
+        display: block;
+        font-size: 1.6rem; font-weight: 300;
+        color: var(--gold-bright);
+        line-height: 1;
+        font-feature-settings: 'tnum';
+        letter-spacing: -.02em;
+    }
+    .grafo-counter-label {
+        display: block;
+        font-size: .68rem; letter-spacing: .2em; text-transform: uppercase;
+        color: var(--cream-3);
+        margin-top: .5rem;
     }
 
-    .ruta-card {
-        border: 1px solid rgba(148, 163, 184, .22);
-        background: rgba(15, 23, 42, .82);
-        backdrop-filter: blur(12px);
-        border-radius: 22px;
-        box-shadow: 0 18px 45px rgba(0, 0, 0, .45);
-        margin-bottom: 18px;
-    }
-
-    .ruta-card .card-body {
-        padding: 20px;
+    /* ── Cálculo de rutas ───────────────────────────────────── */
+    .ruta-section {
+        margin: 2rem 0 1.5rem;
+        padding: 1.5rem 1.25rem;
+        background: rgba(17, 21, 31, .85);
+        border: 1px solid var(--line);
     }
 
     .ruta-title {
-        color: #ffc107;
-        font-weight: 700;
-        margin-bottom: 14px;
+        display: flex; align-items: center; gap: .8rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .82rem; letter-spacing: .18em; text-transform: uppercase;
+        color: var(--cream-2);
+        margin: 0 0 1.1rem; font-weight: 500;
+    }
+    .ruta-title svg { width: 18px; height: 18px; color: var(--gold); flex-shrink: 0; }
+    .ruta-title::after {
+        content: ''; flex: 1; height: 1px;
+        background: linear-gradient(to right, var(--gold-deep), transparent);
     }
 
-    .grafo-select {
-        background-color: #020617 !important;
-        color: #e5e7eb !important;
-        border: 1px solid rgba(148, 163, 184, .35) !important;
-        border-radius: 14px !important;
+    .ruta-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: .75rem;
+        align-items: stretch;
     }
 
-    .grafo-select:focus {
-        box-shadow: 0 0 0 .2rem rgba(255, 193, 7, .18) !important;
-        border-color: #ffc107 !important;
+    .ruta-select {
+        appearance: none;
+        -webkit-appearance: none;
+        background: rgba(6, 8, 18, .85);
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23d4a657' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right .85rem center;
+        background-size: 14px;
+        border: 1px solid var(--line);
+        color: var(--cream);
+        padding: .65rem 2.4rem .65rem .9rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .8rem;
+        letter-spacing: .04em;
+        transition: border-color .18s, background-color .18s;
+        cursor: pointer;
     }
+    .ruta-select:hover { border-color: var(--gold-deep); }
+    .ruta-select:focus {
+        outline: none; border-color: var(--gold);
+        background-color: rgba(212, 166, 87, .04);
+    }
+    .ruta-select option { background: var(--cosmos-0); color: var(--cream); }
 
-    .grafo-btn {
-        border-radius: 14px;
-        font-weight: 700;
-        padding-left: 20px;
-        padding-right: 20px;
-        box-shadow: 0 0 18px rgba(255, 193, 7, .28);
+    .ruta-btn {
+        display: inline-flex; align-items: center; gap: .55rem;
+        padding: .7rem 1.4rem;
+        background: var(--gold); border: 1px solid var(--gold);
+        color: var(--cosmos-0);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .75rem; letter-spacing: .2em; text-transform: uppercase;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .18s, border-color .18s;
     }
+    .ruta-btn:hover { background: var(--gold-bright); border-color: var(--gold-bright); }
+    .ruta-btn svg { width: 14px; height: 14px; }
 
     #resultado-ruta {
-        margin-top: 14px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        background: rgba(2, 6, 23, .7);
-        border: 1px solid rgba(148, 163, 184, .18);
-        color: #e5e7eb;
+        margin-top: 1rem;
+        padding: .85rem 1rem;
+        background: rgba(6, 8, 18, .7);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--gold);
+        color: var(--cream-2);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .82rem;
+        line-height: 1.7;
+        letter-spacing: .02em;
     }
+    #resultado-ruta strong { color: var(--gold); font-weight: 500; }
+    #resultado-ruta .text-danger { color: var(--rust) !important; }
+    #resultado-ruta .text-warning { color: var(--gold-bright) !important; }
 
-    .grafo-card {
+    /* ── Canvas ─────────────────────────────────────────────── */
+    .canvas-wrap {
         position: relative;
-        overflow: hidden;
-        border-radius: 24px;
-        border: 1px solid rgba(148, 163, 184, .25);
+        margin-top: 1rem;
+        border: 1px solid var(--line);
         background: #000;
-        box-shadow: 0 22px 55px rgba(0, 0, 0, .65);
+        overflow: hidden;
+    }
+    .canvas-wrap::before {
+        content: ''; position: absolute;
+        top: 0; left: 0; right: 0; height: 2px;
+        background: linear-gradient(to right, transparent, var(--gold), transparent);
+        z-index: 2; pointer-events: none;
     }
 
     #grafo-canvas {
@@ -103,89 +213,126 @@
 
     .grafo-help {
         position: absolute;
-        left: 18px;
-        top: 18px;
+        left: 16px; top: 16px;
         z-index: 2;
-        padding: 14px 16px;
-        border-radius: 16px;
-        background: rgba(2, 6, 23, .72);
-        border: 1px solid rgba(148, 163, 184, .22);
-        color: #cbd5e1;
-        font-size: 13px;
-        line-height: 1.8;
-        backdrop-filter: blur(8px);
+        padding: .75rem 1rem;
+        background: rgba(6, 8, 18, .8);
+        border: 1px solid var(--line);
+        color: var(--cream-2);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        line-height: 1.7;
         pointer-events: none;
     }
+    .grafo-help strong { color: var(--gold); font-weight: 500; }
 
-    @@media (max-width: 768px) {
+    /* ── Responsive ─────────────────────────────────────────── */
+    @@media (max-width: 980px) {
         .grafo-header {
-            flex-direction: column;
-            align-items: flex-start;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
         }
-
-        #grafo-canvas {
-            height: 520px;
+        .grafo-header svg.reticle { display: none; }
+        .grafo-counter {
+            text-align: left;
+            border-left: none;
+            border-top: 1px solid var(--line);
+            padding: .85rem 0 0;
         }
-
-        .grafo-help {
-            font-size: 12px;
-            left: 10px;
-            top: 10px;
-        }
+        .grafo-title { font-size: 2.6rem; }
+        .ruta-controls { grid-template-columns: 1fr; }
+        #grafo-canvas { height: 520px; }
     }
 </style>
 
-<div class="grafo-page">
+<div class="grafo-atmos" aria-hidden="true"></div>
 
-    <div class="grafo-header">
-        <h2 class="grafo-title">Grafo de Relaciones Astronómicas</h2>
+<section class="grafo-page">
 
-        <div class="grafo-badge">
-            @Model.Nodos.Count() nodos &bull; @Model.Aristas.Count() aristas
-        </div>
+    <div class="grafo-meta">
+        <span class="grafo-meta-item">α 12ʰ 34ᵐ 18ˢ</span>
+        <span class="grafo-meta-item">δ −23°45′12″</span>
+        <span class="grafo-meta-item">Topología relacional</span>
+        <span class="grafo-meta-item">Vol. II · Bitácora</span>
     </div>
 
-    <div class="card ruta-card">
-        <div class="card-body">
-            <h6 class="ruta-title">Calcular rutas</h6>
+    <header class="grafo-header">
+        <svg class="reticle" viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="0.8" aria-hidden="true">
+            <circle cx="28" cy="28" r="24" />
+            <circle cx="28" cy="28" r="16" stroke-dasharray="2 4" />
+            <circle cx="28" cy="28" r="2" fill="currentColor" stroke="none" />
+            <line x1="28" y1="0" x2="28" y2="10" />
+            <line x1="28" y1="46" x2="28" y2="56" />
+            <line x1="0" y1="28" x2="10" y2="28" />
+            <line x1="46" y1="28" x2="56" y2="28" />
+        </svg>
 
-            <div class="row g-3 align-items-center">
-                <div class="col-md-4">
-                    <select id="sel-origen" class="form-select form-select-sm grafo-select">
-                        <option value="">— Origen —</option>
-                        @foreach (var n in Model.Nodos)
-                        {
-                            <option value="@n.Id">@n.Nombre</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="col-md-4">
-                    <select id="sel-destino" class="form-select form-select-sm grafo-select">
-                        <option value="">— Destino —</option>
-                        @foreach (var n in Model.Nodos)
-                        {
-                            <option value="@n.Id">@n.Nombre</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="col-auto">
-                    <button class="btn btn-sm btn-warning grafo-btn" onclick="calcularRuta()">
-                        Calcular
-                    </button>
-                </div>
-            </div>
-
-            <div id="resultado-ruta">Selecciona origen y destino.</div>
+        <div>
+            <span class="grafo-title-pre">Grafo · Relaciones</span>
+            <h1 class="grafo-title">Astronómicas</h1>
         </div>
+
+        <div class="grafo-counter">
+            @{
+                var totalConst = Model.Nodos.Count(n => n.Tipo == "Constelación");
+                var totalObj = Model.Nodos.Count() - totalConst;
+            }
+            <span class="grafo-counter-value">@Model.Nodos.Count().ToString("N0")</span>
+            <span class="grafo-counter-label">@totalObj objetos · @totalConst constelaciones · @Model.Aristas.Count().ToString("N0") aristas</span>
+        </div>
+    </header>
+
+    @* ── Cálculo de rutas ──────────────────────────────────── *@
+    <div class="ruta-section">
+        <div class="ruta-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="6" cy="12" r="2.5" />
+                <circle cx="18" cy="12" r="2.5" />
+                <line x1="8.5" y1="12" x2="15.5" y2="12" stroke-dasharray="2 2" />
+                <polyline points="13 8 17 12 13 16" />
+            </svg>
+            Cálculo de rutas
+        </div>
+
+        <div class="ruta-controls">
+            <select id="sel-origen" class="ruta-select" aria-label="Origen">
+                <option value="">— Origen —</option>
+                @foreach (var n in Model.Nodos)
+                {
+                    <option value="@n.Id">@n.Nombre</option>
+                }
+            </select>
+
+            <select id="sel-destino" class="ruta-select" aria-label="Destino">
+                <option value="">— Destino —</option>
+                @foreach (var n in Model.Nodos)
+                {
+                    <option value="@n.Id">@n.Nombre</option>
+                }
+            </select>
+
+            <button class="ruta-btn" onclick="calcularRuta()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+                Calcular
+            </button>
+        </div>
+
+        <div id="resultado-ruta">Selecciona origen y destino.</div>
     </div>
 
-    <div class="grafo-card">
+    @* ── Canvas ────────────────────────────────────────────── *@
+    <div class="canvas-wrap">
+        <div class="grafo-help">
+            <strong>Arrastrar:</strong> mover · <strong>Rueda:</strong> zoom · <strong>Clic:</strong> abrir
+        </div>
         <canvas id="grafo-canvas"></canvas>
     </div>
 
-</div>
+</section>
 
 <script id="grafo-data" type="application/json">
 {
@@ -195,40 +342,40 @@
 </script>
 
 @section Scripts {
-<script src="~/js/grafo-viewer.js" asp-append-version="true"></script>
+    <script src="~/js/grafo-viewer.js" asp-append-version="true"></script>
 
-<script>
-async function calcularRuta() {
-    const origen = document.getElementById('sel-origen').value;
-    const destino = document.getElementById('sel-destino').value;
-    const div = document.getElementById('resultado-ruta');
+    <script>
+        async function calcularRuta() {
+            const origen = document.getElementById('sel-origen').value;
+            const destino = document.getElementById('sel-destino').value;
+            const div = document.getElementById('resultado-ruta');
 
-    if (!origen || !destino) {
-        div.textContent = 'Selecciona origen y destino.';
-        return;
-    }
+            if (!origen || !destino) {
+                div.textContent = 'Selecciona origen y destino.';
+                return;
+            }
 
-    try {
-        const r = await fetch(`/api/grafo/ruta?origen=${origen}&destino=${destino}`);
+            try {
+                const r = await fetch(`/api/grafo/ruta?origen=${origen}&destino=${destino}`);
 
-        if (!r.ok) {
-            div.innerHTML = '<span class="text-danger">No existe ruta entre esos objetos.</span>';
-            return;
+                if (!r.ok) {
+                    div.innerHTML = '<span class="text-danger">No existe ruta entre esos objetos.</span>';
+                    return;
+                }
+
+                const d = await r.json();
+
+                div.innerHTML = `<strong>Ruta:</strong> ${d.ruta.join(' → ')}
+                    &nbsp;·&nbsp; <strong>Distancia total:</strong> ${d.distanciaTotal.toFixed(4)} UA
+                    &nbsp;·&nbsp; <strong>Saltos:</strong> ${d.saltos}`;
+
+                if (window.resaltarRutaGrafo) {
+                    window.resaltarRutaGrafo(d.ruta);
+                }
+
+            } catch (e) {
+                div.innerHTML = '<span class="text-danger">Error al calcular ruta.</span>';
+            }
         }
-
-        const d = await r.json();
-
-        div.innerHTML = `<strong class="text-warning">Ruta:</strong> ${d.ruta.join(' → ')}
-            &nbsp;|&nbsp; <strong>Distancia total:</strong> ${d.distanciaTotal.toFixed(4)} UA
-            &nbsp;|&nbsp; <strong>Saltos:</strong> ${d.saltos}`;
-
-        if (window.resaltarRutaGrafo) {
-            window.resaltarRutaGrafo(d.ruta);
-        }
-
-    } catch(e) {
-        div.innerHTML = '<span class="text-danger">Error al calcular ruta.</span>';
-    }
-}
-</script>
+    </script>
 }
