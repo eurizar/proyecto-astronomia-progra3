@@ -158,6 +158,7 @@ public class ObjetoService
         try
         {
             var cuerpos = await _apiClient.ObtenerTodosAsync();
+            _logger.LogInformation("Cuerpos recibidos desde API: {Count}", cuerpos.Count());
 
             // Asegurar la existencia de los tipos de objeto
             async Task<TipoObjeto> ObtenerOCrearTipo(string nombre, string descripcion)

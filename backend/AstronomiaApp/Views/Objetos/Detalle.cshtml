@@ -1,96 +1,656 @@
 @model AstronomiaApp.Models.ViewModels.ObjetoViewModel
 @{
     ViewData["Title"] = Model.Nombre;
+    var tipo = (Model.Tipo ?? "").ToLower();
+
+    // Colores SOLO para el orbe planetario (no para tipografía/UI)
+    string visualA = "#d4a657", visualB = "#a07d35";
+    string subtitulo = "Objeto astronómico";
+
+    if (tipo.Contains("estrella"))      { visualA = "#facc15"; visualB = "#f97316"; subtitulo = "Estrella"; }
+    else if (tipo.Contains("planeta enano")) { visualA = "#cbd5e1"; visualB = "#64748b"; subtitulo = "Planeta enano"; }
+    else if (tipo.Contains("planeta"))  { visualA = "#60a5fa"; visualB = "#2563eb"; subtitulo = "Planeta"; }
+    else if (tipo.Contains("galaxia"))  { visualA = "#a855f7"; visualB = "#ec4899"; subtitulo = "Galaxia"; }
+    else if (tipo.Contains("constel"))  { visualA = "#7eb6cd"; visualB = "#3a6678"; subtitulo = "Constelación"; }
+    else if (tipo.Contains("sat"))      { visualA = "#e2dccb"; visualB = "#7e7866"; subtitulo = "Satélite natural"; }
+    else if (tipo.Contains("asteroide")){ visualA = "#a07d35"; visualB = "#5a4720"; subtitulo = "Asteroide"; }
+    else if (tipo.Contains("cometa"))   { visualA = "#7eb6cd"; visualB = "#3a6678"; subtitulo = "Cometa"; }
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index" class="text-warning">Catálogo</a></li>
-        <li class="breadcrumb-item active text-light">@Model.Nombre</li>
-    </ol>
-</nav>
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=JetBrains+Mono:wght@@300;400;500;600&display=swap');
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card bg-secondary border-0 mb-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <h2 class="text-warning mb-0 me-3">@Model.Nombre</h2>
-                    <span class="badge bg-info text-dark fs-6">@Model.Tipo</span>
+    .detalle {
+        --cosmos-0: #060812;
+        --cosmos-1: #11151f;
+        --cream: #f3ead4;
+        --cream-2: #d4cbb0;
+        --cream-3: #a39b85;
+        --muted: #6a6657;
+        --gold: #d4a657;
+        --gold-bright: #f3c87c;
+        --gold-deep: #a07d35;
+        --cyan: #7eb6cd;
+        --line: #2a3346;
+        --visual-a: @visualA;
+        --visual-b: @visualB;
+
+        position: relative;
+        z-index: 1;
+        color: var(--cream);
+        font-family: 'Cormorant Garamond', 'Spectral', Georgia, serif;
+        padding: 1rem 0 4rem;
+    }
+
+    body.bg-dark { background: #060812 !important; }
+
+    /* ── Atmósfera ────────────────────────────────────────────── */
+    .detalle-atmos {
+        position: fixed; inset: 0; z-index: -1; pointer-events: none;
+        background:
+            radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,166,87,.06), transparent 60%),
+            radial-gradient(ellipse 40% 35% at 90% 80%, rgba(126,182,205,.04), transparent 70%),
+            #060812;
+    }
+    .detalle-atmos::after {
+        content: ''; position: absolute; inset: 0;
+        background-image:
+            radial-gradient(1px 1px at 18% 28%, rgba(243,234,212,.55), transparent 50%),
+            radial-gradient(1.5px 1.5px at 82% 22%, rgba(243,200,124,.7), transparent 60%),
+            radial-gradient(1px 1px at 56% 88%, rgba(243,234,212,.5), transparent 50%);
+        background-size: 800px 800px, 1100px 1100px, 600px 600px;
+        opacity: .55;
+    }
+
+    /* ── Breadcrumb / meta ────────────────────────────────────── */
+    .detalle-meta {
+        display: flex; align-items: center; gap: 1rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .78rem; letter-spacing: .16em; text-transform: uppercase;
+        color: var(--cream-3);
+        margin-bottom: 2rem;
+    }
+    .detalle-meta a {
+        display: inline-flex; align-items: center; gap: .4rem;
+        color: var(--gold); text-decoration: none;
+        transition: color .18s;
+    }
+    .detalle-meta a:hover { color: var(--gold-bright); }
+    .detalle-meta a svg { width: 14px; height: 14px; }
+    .detalle-meta-sep { color: var(--line); }
+    .detalle-meta-current { color: var(--cream); }
+
+    /* ── Hero ─────────────────────────────────────────────────── */
+    .hero-detalle {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 3rem;
+        align-items: start;
+        padding: 1.5rem 0 2rem;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+    }
+
+    .astro-visual {
+        display: flex; justify-content: center; align-items: center;
+        min-height: 380px; position: relative;
+    }
+    .astro-visual .reticle-frame {
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        color: var(--gold); opacity: .22; pointer-events: none;
+    }
+    .planet-glow {
+        width: 240px; height: 240px; border-radius: 50%;
+        background:
+            radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), transparent 10%),
+            radial-gradient(circle at 35% 35%, var(--visual-a), var(--visual-b) 48%, #111827 80%);
+        box-shadow:
+            0 0 50px var(--visual-a),
+            0 0 120px rgba(255,255,255,.1),
+            inset -25px -25px 50px rgba(0,0,0,.55);
+        position: relative;
+        animation: flotar 5s ease-in-out infinite;
+    }
+    .planet-glow::after {
+        content: ''; position: absolute; inset: -40px; border-radius: 50%;
+        background: radial-gradient(circle, var(--visual-a) 0%, transparent 65%);
+        opacity: .15; z-index: -1;
+    }
+
+    @@keyframes flotar {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    /* ── Título ────────────────────────────────────────────────── */
+    .detalle-title-pre {
+        display: inline-flex; align-items: center; gap: .55rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .82rem; letter-spacing: .28em; text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: .85rem; font-weight: 500;
+    }
+    .detalle-title-pre svg { width: 18px; height: 18px; }
+
+    .detalle-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic; font-weight: 500;
+        font-size: 4.5rem; line-height: .95;
+        color: var(--cream);
+        letter-spacing: -.02em;
+        margin: 0 0 .6rem;
+        text-shadow: 0 0 40px rgba(243,234,212,.08);
+    }
+
+    .detalle-id {
+        display: inline-block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+        color: var(--cream-3); margin-bottom: 1.5rem;
+    }
+    .detalle-id strong { color: var(--gold); font-weight: 500; }
+
+    .detalle-desc {
+        color: var(--cream-2);
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.2rem; line-height: 1.55;
+        max-width: 60ch; font-style: italic;
+        margin-bottom: 0;
+    }
+
+    /* ── Section title ──────────────────────────────────────────── */
+    .section-title {
+        display: flex; align-items: center; gap: .85rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .82rem; letter-spacing: .18em; text-transform: uppercase;
+        color: var(--cream-2);
+        margin: 2.5rem 0 1.2rem; font-weight: 500;
+    }
+    .section-title::after {
+        content: ''; flex: 1; height: 1px;
+        background: linear-gradient(to right, var(--gold-deep), transparent);
+    }
+    .section-title svg { width: 18px; height: 18px; color: var(--gold); flex-shrink: 0; }
+
+    /* ── Data grid ──────────────────────────────────────────────── */
+    .data-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: .75rem;
+    }
+
+    .data-card {
+        background: rgba(17, 21, 31, .85);
+        border: 1px solid var(--line);
+        padding: 1rem 1.1rem;
+        position: relative;
+        transition: border-color .2s, background .2s;
+    }
+    .data-card:hover {
+        border-color: var(--gold);
+        background: rgba(212, 166, 87, .04);
+    }
+    .data-card::before {
+        content: ''; position: absolute;
+        top: 0; left: 0;
+        width: 0; height: 2px;
+        background: var(--gold);
+        transition: width .25s ease;
+    }
+    .data-card:hover::before { width: 100%; }
+
+    .data-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem; letter-spacing: .18em; text-transform: uppercase;
+        color: var(--cream-3); font-weight: 500;
+        margin-bottom: .55rem;
+    }
+    .data-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.05rem; font-weight: 400;
+        color: var(--cream);
+        font-feature-settings: 'tnum';
+        letter-spacing: -.005em;
+        word-break: break-word;
+        line-height: 1.3;
+    }
+    .data-value.empty {
+        color: var(--muted); font-size: 1.4rem; opacity: .6;
+    }
+    .data-value.text {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic; font-size: 1.25rem;
+    }
+
+    /* ── Relaciones ─────────────────────────────────────────────── */
+    .relacion-item {
+        display: inline-flex; align-items: center; gap: .55rem;
+        margin: .4rem .35rem 0 0;
+        padding: .5rem .9rem;
+        background: rgba(17, 21, 31, .85);
+        border: 1px solid var(--line);
+        color: var(--cream); text-decoration: none;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.05rem; font-style: italic;
+        transition: border-color .2s, background .2s, color .2s;
+    }
+    .relacion-item:hover {
+        border-color: var(--gold);
+        background: rgba(212, 166, 87, .08);
+        color: var(--gold);
+    }
+    .relacion-tipo {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .65rem; letter-spacing: .14em; text-transform: uppercase;
+        color: var(--gold); font-style: normal; font-weight: 500;
+    }
+    .relacion-empty {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .75rem; letter-spacing: .15em; text-transform: uppercase;
+        color: var(--cream-3);
+    }
+
+    /* ── Acciones ───────────────────────────────────────────────── */
+    .detalle-actions {
+        margin-top: 3rem;
+        display: flex; flex-wrap: wrap; gap: .6rem;
+    }
+    .action-btn {
+        display: inline-flex; align-items: center; gap: .55rem;
+        padding: .7rem 1.25rem;
+        background: rgba(17, 21, 31, .85);
+        border: 1px solid var(--line);
+        color: var(--cream); text-decoration: none;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .75rem; letter-spacing: .18em; text-transform: uppercase;
+        font-weight: 500;
+        transition: border-color .2s, color .2s, background .2s;
+    }
+    .action-btn svg { width: 14px; height: 14px; }
+    .action-btn:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+        background: rgba(212, 166, 87, .08);
+    }
+    .action-btn.primary {
+        background: var(--gold); color: #060812; border-color: var(--gold);
+    }
+    .action-btn.primary:hover {
+        background: var(--gold-bright); border-color: var(--gold-bright); color: #060812;
+    }
+
+    /* ── Botón cerrar (X / ESC) ─────────────────────────────────── */
+    .detalle-close {
+        position: fixed;
+        top: 84px; right: 1.5rem;
+        z-index: 1100;
+        display: flex; flex-direction: column;
+        align-items: center; gap: 4px;
+        padding: .7rem .9rem;
+        background: rgba(17, 21, 31, .92);
+        border: 1px solid var(--gold);
+        color: var(--gold);
+        text-decoration: none;
+        font-family: 'JetBrains Mono', monospace;
+        line-height: 1;
+        transition: background .18s, color .18s;
+    }
+    .detalle-close:hover {
+        background: var(--gold); color: #060812;
+    }
+    .detalle-close .close-x {
+        font-size: 1.6rem; font-weight: 300;
+    }
+    .detalle-close .close-label {
+        font-size: .6rem; letter-spacing: .25em; text-transform: uppercase;
+    }
+
+    /* ── Warp arrival ───────────────────────────────────────────── */
+    .warp-arrival { position: fixed; inset: 0; z-index: 9999; pointer-events: none; overflow: hidden; }
+    .warp-arrival .warp-line { position: absolute; width: 2px; height: 0; transform-origin: top center; opacity: 0; }
+    .warp-arrival .warp-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: warp-flash-in .7s ease-out forwards; }
+
+    @@keyframes warp-line-in {
+        0%   { height: 320px; opacity: 1; }
+        100% { height: 0; opacity: 0; }
+    }
+    @@keyframes warp-flash-in {
+        0%   { opacity: .9; }
+        100% { opacity: 0; }
+    }
+
+    /* Entrada del contenido */
+    .detalle { animation: detalle-in .9s .25s ease-out both; }
+    @@keyframes detalle-in {
+        from { opacity: 0; transform: scale(.985); }
+        to   { opacity: 1; transform: none; }
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @@media (max-width: 980px) {
+        .hero-detalle { grid-template-columns: 1fr; gap: 1.5rem; }
+        .data-grid { grid-template-columns: repeat(2, 1fr); }
+        .detalle-title { font-size: 3rem; }
+        .astro-visual { min-height: 280px; }
+        .planet-glow { width: 200px; height: 200px; }
+    }
+    @@media (max-width: 640px) {
+        .data-grid { grid-template-columns: 1fr; }
+        .detalle-title { font-size: 2.4rem; }
+    }
+</style>
+
+<div class="detalle-atmos" aria-hidden="true"></div>
+
+<a asp-action="Index" class="detalle-close" title="Volver al catálogo (Esc)" aria-label="Cerrar">
+    <span class="close-x">×</span>
+    <span class="close-label">Esc</span>
+</a>
+
+<div class="detalle">
+
+    @* ── Breadcrumb ─────────────────────────────────────────── *@
+    <nav class="detalle-meta" aria-label="ruta">
+        <a asp-action="Index">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Catálogo
+        </a>
+        <span class="detalle-meta-sep">/</span>
+        <span class="detalle-meta-current">@Model.Nombre</span>
+    </nav>
+
+    @* ── Hero ──────────────────────────────────────────────── *@
+    <div class="hero-detalle">
+
+        <div class="astro-visual">
+            <svg class="reticle-frame" viewBox="0 0 360 360" fill="none" stroke="currentColor" stroke-width="0.8" aria-hidden="true">
+                <circle cx="180" cy="180" r="158" />
+                <circle cx="180" cy="180" r="130" stroke-dasharray="2 6" />
+                <line x1="180" y1="0" x2="180" y2="20" />
+                <line x1="180" y1="340" x2="180" y2="360" />
+                <line x1="0" y1="180" x2="20" y2="180" />
+                <line x1="340" y1="180" x2="360" y2="180" />
+            </svg>
+            <div class="planet-glow"></div>
+        </div>
+
+        <div>
+            <div class="detalle-title-pre">
+                @* Icono SVG según tipo *@
+                @if (tipo.Contains("estrella"))
+                {
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.5L13.8 9.3 L21.5 11 L13.8 12.7 L12 20.5 L10.2 12.7 L2.5 11 L10.2 9.3 Z" /></svg>
+                }
+                else if (tipo.Contains("planeta enano"))
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5" />
+                        <circle cx="12" cy="12" r="10" stroke-dasharray="1 2.2" />
+                    </svg>
+                }
+                else if (tipo.Contains("planeta"))
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <circle cx="12" cy="12" r="6" />
+                        <ellipse cx="12" cy="12" rx="11" ry="3.5" transform="rotate(-20 12 12)" />
+                    </svg>
+                }
+                else if (tipo.Contains("galaxia"))
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                        <path d="M3 12 C 6 4, 18 4, 21 12 C 18 20, 6 20, 3 12 Z" />
+                        <circle cx="12" cy="12" r="2" fill="currentColor" />
+                    </svg>
+                }
+                else if (tipo.Contains("constel"))
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <circle cx="5" cy="6" r="1.2" fill="currentColor" />
+                        <circle cx="12" cy="4" r="1.2" fill="currentColor" />
+                        <circle cx="19" cy="9" r="1.2" fill="currentColor" />
+                        <circle cx="15" cy="17" r="1.2" fill="currentColor" />
+                        <circle cx="6" cy="18" r="1.2" fill="currentColor" />
+                        <line x1="5" y1="6" x2="12" y2="4" />
+                        <line x1="12" y1="4" x2="19" y2="9" />
+                        <line x1="19" y1="9" x2="15" y2="17" />
+                        <line x1="15" y1="17" x2="6" y2="18" />
+                        <line x1="6" y1="18" x2="5" y2="6" />
+                    </svg>
+                }
+                else if (tipo.Contains("sat"))
+                {
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M16.5 4 a 9 9 0 1 0 0 16 a 7 7 0 1 1 0 -16 z" />
+                    </svg>
+                }
+                else if (tipo.Contains("asteroide"))
+                {
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 3 L18 6 L21 12 L17 19 L9 21 L4 16 L3 9 L7 4 Z" />
+                    </svg>
+                }
+                else if (tipo.Contains("cometa"))
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <circle cx="6" cy="18" r="3" fill="currentColor" />
+                        <line x1="9" y1="15" x2="22" y2="2" />
+                        <line x1="13" y1="11" x2="20" y2="4" />
+                    </svg>
+                }
+                else
+                {
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4" />
+                    </svg>
+                }
+                @subtitulo · @Model.Tipo
+            </div>
+
+            <h1 class="detalle-title">@Model.Nombre</h1>
+
+            <div class="detalle-id">
+                Registro <strong>№ @Model.Id.ToString("D4")</strong>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Descripcion))
+            {
+                <p class="detalle-desc">@Model.Descripcion</p>
+            }
+            else
+            {
+                <p class="detalle-desc">
+                    Información astronómica registrada en el sistema para este objeto.
+                </p>
+            }
+
+            @* ── Datos científicos ──────────────────────────── *@
+            <div class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 12h3l3-9 6 18 3-9h3" />
+                </svg>
+                Datos científicos
+            </div>
+
+            <div class="data-grid">
+                <div class="data-card">
+                    <div class="data-label">Masa</div>
+                    <div class="data-value @(!Model.MasaKg.HasValue ? "empty" : "")">
+                        @(Model.MasaKg.HasValue ? $"{Model.MasaKg.Value:E3} kg" : "—")
+                    </div>
                 </div>
 
-                @if (!string.IsNullOrEmpty(Model.Descripcion))
-                {
-                    <p class="text-light">@Model.Descripcion</p>
-                }
+                <div class="data-card">
+                    <div class="data-label">Radio medio</div>
+                    <div class="data-value @(!Model.RadioKm.HasValue ? "empty" : "")">
+                        @(Model.RadioKm.HasValue ? $"{Model.RadioKm.Value:N0} km" : "—")
+                    </div>
+                </div>
 
-                <table class="table table-dark table-sm mt-3">
-                    <tbody>
-                        <tr>
-                            <th class="text-warning" style="width:40%">Masa</th>
-                            <td>@(Model.MasaKg.HasValue ? $"{Model.MasaKg.Value:E3} kg" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Radio medio</th>
-                            <td>@(Model.RadioKm.HasValue ? $"{Model.RadioKm.Value:N0} km" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Distancia a la Tierra</th>
-                            <td>@(Model.DistanciaTierraAl.HasValue ? $"{Model.DistanciaTierraAl.Value:N4} UA" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Temperatura</th>
-                            <td>@(Model.TemperaturaK.HasValue ? $"{Model.TemperaturaK.Value:N0} K" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Luminosidad</th>
-                            <td>@(Model.Luminosidad.HasValue ? $"{Model.Luminosidad.Value:N4} L☉" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Sistema planetario</th>
-                            <td>@(Model.Sistema ?? "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Constelación</th>
-                            <td>@(Model.Constelacion ?? "—")</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="data-card">
+                    <div class="data-label">Distancia · Tierra</div>
+                    <div class="data-value @(!Model.DistanciaTierraAl.HasValue ? "empty" : "")">
+                        @(Model.DistanciaTierraAl.HasValue ? $"{Model.DistanciaTierraAl.Value:N4} UA" : "—")
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Temperatura</div>
+                    <div class="data-value @(!Model.TemperaturaK.HasValue ? "empty" : "")">
+                        @(Model.TemperaturaK.HasValue ? $"{Model.TemperaturaK.Value:N0} K" : "—")
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Luminosidad</div>
+                    <div class="data-value @(!Model.Luminosidad.HasValue ? "empty" : "")">
+                        @(Model.Luminosidad.HasValue ? $"{Model.Luminosidad.Value:N4} L☉" : "—")
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Sistema planetario</div>
+                    <div class="data-value text @(string.IsNullOrEmpty(Model.Sistema) ? "empty" : "")">
+                        @(Model.Sistema ?? "—")
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Constelación</div>
+                    <div class="data-value text @(string.IsNullOrEmpty(Model.Constelacion) ? "empty" : "")">
+                        @(Model.Constelacion ?? "—")
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Clase</div>
+                    <div class="data-value text">@Model.Tipo</div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Identificador</div>
+                    <div class="data-value">№ @Model.Id.ToString("D4")</div>
+                </div>
+            </div>
+
+            @* ── Relaciones ─────────────────────────────────── *@
+            <div class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="6" cy="6" r="2.2" />
+                    <circle cx="18" cy="6" r="2.2" />
+                    <circle cx="12" cy="18" r="2.2" />
+                    <line x1="7.5" y1="7.5" x2="11" y2="16" />
+                    <line x1="13" y1="16" x2="16.5" y2="7.5" />
+                    <line x1="8" y1="6" x2="16" y2="6" />
+                </svg>
+                Relaciones astronómicas
+            </div>
+            <div id="vecinos-container">
+                <span class="relacion-empty">Cargando relaciones…</span>
+            </div>
+
+            @* ── Acciones ───────────────────────────────────── *@
+            <div class="detalle-actions">
+                <a asp-action="Index" class="action-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12" />
+                        <polyline points="12 19 5 12 12 5" />
+                    </svg>
+                    Volver al catálogo
+                </a>
+                <a asp-controller="Grafo" asp-action="Index"
+                   asp-route-destacar="@Model.Nombre"
+                   asp-route-via="@Model.Constelacion"
+                   class="action-btn primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="6" cy="6" r="2" />
+                        <circle cx="18" cy="6" r="2" />
+                        <circle cx="12" cy="18" r="2" />
+                        <line x1="7.5" y1="7.5" x2="11" y2="16" />
+                        <line x1="13" y1="16" x2="16.5" y2="7.5" />
+                        <line x1="8" y1="6" x2="16" y2="6" />
+                    </svg>
+                    Ver en grafo
+                </a>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card bg-secondary border-0 mb-3">
-            <div class="card-header text-warning fw-bold">Relaciones</div>
-            <div class="card-body" id="vecinos-container">
-                <div class="text-muted small">Cargando...</div>
-            </div>
-        </div>
-
-        <a asp-action="Index" class="btn btn-outline-light btn-sm me-2">← Catálogo</a>
-        <a asp-controller="Grafo" asp-action="Index" class="btn btn-outline-warning btn-sm">Ver en Grafo</a>
     </div>
 </div>
 
 @section Scripts {
-<script>
-(async function () {
-    const id = @Model.Id;
-    const r = await fetch(`/api/grafo/vecinos/${id}`);
-    const d = await r.json();
-    const cont = document.getElementById('vecinos-container');
-    if (!d.vecinos || d.vecinos.length === 0) {
-        cont.innerHTML = '<span class="text-muted small">Sin relaciones registradas.</span>';
-        return;
-    }
-    cont.innerHTML = d.vecinos.map(v =>
-        `<div class="mb-2">
-            <a href="/Objetos/Detalle/${v.id}" class="text-warning fw-bold">${v.nombre}</a>
-            <span class="badge bg-dark text-info ms-1">${v.tipoRelacion || 'relación'}</span>
-            <div class="text-muted small">${v.distanciaAl ? v.distanciaAl.toFixed(4) + ' UA' : ''}</div>
-         </div>`
-    ).join('');
-})();
-</script>
+    <script>
+        // ── Warp de llegada (mismo estilo del sistema solar) ─────
+        (function arrivalWarp() {
+            const ov = document.createElement('div');
+            ov.className = 'warp-arrival';
+            for (let i = 0; i < 80; i++) {
+                const angle = Math.random() * 360;
+                const delay = Math.random() * 150;
+                const cx = 50 + (Math.random() - 0.5) * 8;
+                const cy = 50 + (Math.random() - 0.5) * 8;
+                const c = Math.random() > 0.5 ? '#f3c87c' : '#f3ead4';
+                const line = document.createElement('div');
+                line.className = 'warp-line';
+                line.style.cssText = `
+                    top:${cy}%; left:${cx}%;
+                    background:linear-gradient(to bottom, transparent, ${c}, transparent);
+                    transform:rotate(${angle}deg);
+                    animation: warp-line-in 0.55s ${delay}ms ease-out forwards;
+                `;
+                ov.appendChild(line);
+            }
+            const flash = document.createElement('div');
+            flash.className = 'warp-flash';
+            ov.appendChild(flash);
+            document.body.appendChild(ov);
+            setTimeout(() => ov.remove(), 1100);
+        })();
+
+        // ── Volver: history.back() preserva estado (canvas grafo, paginación, etc.)
+        function detalleGoBack() {
+            const ref = document.referrer;
+            if (ref && ref.startsWith(window.location.origin) && history.length > 1) {
+                history.back();
+            } else {
+                window.location.href = '@Url.Action("Index", "Objetos")';
+            }
+        }
+
+        // Esc → volver
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                e.preventDefault();
+                detalleGoBack();
+            }
+        });
+
+        // Botón X (cerrar) → volver
+        document.querySelector('.detalle-close')?.addEventListener('click', function (e) {
+            e.preventDefault();
+            detalleGoBack();
+        });
+
+        // ── Carga de vecinos ───────────────────────────────────
+        (async function () {
+            const id = @Model.Id;
+            const cont = document.getElementById('vecinos-container');
+            try {
+                const r = await fetch(`/api/grafo/vecinos/${id}`);
+                const d = await r.json();
+                if (!d.vecinos || d.vecinos.length === 0) {
+                    cont.innerHTML = '<span class="relacion-empty">Sin relaciones registradas.</span>';
+                    return;
+                }
+                cont.innerHTML = d.vecinos.map(v =>
+                    `<a href="/Objetos/Detalle/${v.id}" class="relacion-item">
+                        ${v.nombre}
+                        <span class="relacion-tipo">${v.tipoRelacion || 'relación'}</span>
+                     </a>`
+                ).join('');
+            } catch (e) {
+                cont.innerHTML = '<span class="relacion-empty">Error al cargar relaciones.</span>';
+            }
+        })();
+    </script>
 }

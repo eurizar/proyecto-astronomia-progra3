@@ -43,6 +43,9 @@ public class GrafoService
 
     // ── Consultas ────────────────────────────────────────────────────────
 
+    // Offset para evitar colisión de IDs entre Objeto.Id y Constelacion.Id en el grafo.
+    public const int CONSTELACION_ID_OFFSET = 1_000_000;
+
     public async Task<GrafoViewModel> ObtenerGrafoCompletoAsync()
     {
         await CargarGrafoAsync();
@@ -50,22 +53,54 @@ public class GrafoService
         var objetos = await _db.ObjetosAstronomicos.Include(o => o.Tipo).ToListAsync();
         var relaciones = await _db.Relaciones.ToListAsync();
 
-        return new GrafoViewModel
+        // Solo constelaciones que tengan al menos un objeto asociado.
+        var constelacionIdsUsadas = objetos
+            .Where(o => o.ConstelacionId.HasValue)
+            .Select(o => o.ConstelacionId!.Value)
+            .Distinct()
+            .ToHashSet();
+
+        var constelaciones = await _db.Constelaciones
+            .Where(c => constelacionIdsUsadas.Contains(c.Id))
+            .ToListAsync();
+
+        // Nodos: objetos + constelaciones
+        var nodos = objetos.Select(o => new NodoGrafoViewModel
         {
-            Nodos = objetos.Select(o => new NodoGrafoViewModel
+            Id = o.Id,
+            Nombre = o.Nombre,
+            Tipo = o.Tipo?.Nombre ?? ""
+        }).ToList();
+
+        nodos.AddRange(constelaciones.Select(c => new NodoGrafoViewModel
+        {
+            Id = c.Id + CONSTELACION_ID_OFFSET,
+            Nombre = c.Nombre,
+            Tipo = "Constelación",
+            Descripcion = c.Descripcion,
+            Abreviatura = c.Abreviatura
+        }));
+
+        // Aristas: relaciones físicas + sintéticas (objeto pertenece a constelación)
+        var aristas = relaciones.Select(r => new AristaGrafoViewModel
+        {
+            Origen = r.OrigenId,
+            Destino = r.DestinoId,
+            TipoRelacion = r.TipoRelacion ?? "",
+            Peso = r.DistanciaAl ?? 1
+        }).ToList();
+
+        aristas.AddRange(objetos
+            .Where(o => o.ConstelacionId.HasValue && constelacionIdsUsadas.Contains(o.ConstelacionId.Value))
+            .Select(o => new AristaGrafoViewModel
             {
-                Id = o.Id,
-                Nombre = o.Nombre,
-                Tipo = o.Tipo?.Nombre ?? ""
-            }),
-            Aristas = relaciones.Select(r => new AristaGrafoViewModel
-            {
-                Origen = r.OrigenId,
-                Destino = r.DestinoId,
-                TipoRelacion = r.TipoRelacion ?? "",
-                Peso = r.DistanciaAl ?? 1
-            })
-        };
+                Origen = o.Id,
+                Destino = o.ConstelacionId!.Value + CONSTELACION_ID_OFFSET,
+                TipoRelacion = "pertenece_a",
+                Peso = 1
+            }));
+
+        return new GrafoViewModel { Nodos = nodos, Aristas = aristas };
     }
 
     public async Task<IEnumerable<(int Id, string Nombre, string TipoRelacion, double Peso)>> ObtenerVecinosAsync(int id)
