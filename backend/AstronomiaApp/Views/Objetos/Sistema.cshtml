@@ -1,0 +1,168 @@
+@{
+    ViewData["Title"] = "Sistema Solar 3D";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema Solar — Astronomía</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/sistema-solar.css" asp-append-version="true" />
+</head>
+<body>
+
+    <!-- Botón volver al catálogo -->
+    <a asp-controller="Objetos" asp-action="Index"
+       style="position:fixed;top:1rem;left:1rem;z-index:9999;
+              color:#00d4ff;font-family:Orbitron,sans-serif;font-size:.75rem;
+              background:rgba(0,0,20,.7);padding:.4rem .8rem;border-radius:4px;
+              border:1px solid #00d4ff33;text-decoration:none;">
+        ← Catálogo
+    </a>
+
+    <!-- Contenedor principal — recibe la API key via data attribute -->
+    <div id="solar-canvas-container"
+         data-api-key="@ViewData["ApiKey"]">
+    </div>
+
+    <div id="loading">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <div class="loading-ring"></div>
+                <div class="loading-ring ring2"></div>
+                <div class="loading-ring ring3"></div>
+                <div class="loading-planet-icon"></div>
+            </div>
+            <div class="loading-text">INICIANDO SISTEMAS</div>
+            <div class="loading-sub" id="loading-status">Conectando con el observatorio IMCCE…</div>
+            <div class="loading-bar"><div class="loading-bar-fill" id="loading-fill"></div></div>
+            <div class="loading-stats" id="loading-stats"></div>
+        </div>
+    </div>
+
+    <div id="hud">
+        <div>
+            <div class="hud-title">SISTEMA SOLAR EXPLORER</div>
+            <div class="hud-coords" id="coords">SECTOR: BRAZO DE ORIÓN · DISTANCIA: 0 UA</div>
+        </div>
+        <div class="hud-right">
+            <div class="api-badge" id="api-badge" title="Datos en tiempo real del IMCCE">
+                <span class="api-dot"></span>
+                <span class="api-label">API LIVE</span>
+            </div>
+            <button class="hud-back" id="btn-back">◄ VOLVER AL SISTEMA</button>
+        </div>
+    </div>
+
+    <div id="zoom-overlay"></div>
+    <div id="macro-labels"></div>
+
+    <div id="planet-detail">
+        <div class="detail-container">
+            <div class="detail-planet">
+                <div class="planet-glow" id="detail-glow"></div>
+                <div class="big-planet" id="detail-planet-visual"></div>
+            </div>
+            <div class="detail-info">
+                <h1 id="detail-name"></h1>
+                <div class="planet-type" id="detail-type"></div>
+                <p class="description" id="detail-desc"></p>
+                <div class="detail-section-title" id="api-data-title">
+                    <span class="section-icon">📡</span> DATOS CIENTÍFICOS EN VIVO
+                    <span class="data-source">Fuente: IMCCE — Observatorio de París</span>
+                </div>
+                <div class="stats-grid" id="detail-stats"></div>
+                <div class="detail-moons-section" id="moons-section" style="display:none;">
+                    <div class="detail-section-title">
+                        <span class="section-icon">🌙</span> LUNAS CONOCIDAS
+                    </div>
+                    <div class="moons-list" id="moons-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mini-nav" id="mini-nav"></div>
+
+    <div class="speed-controls" id="speed-controls">
+        <button class="speed-btn" data-speed="0" title="Pausa">⏸</button>
+        <button class="speed-btn active" data-speed="1" title="Normal">1×</button>
+        <button class="speed-btn" data-speed="2" title="Rápido">2×</button>
+        <button class="speed-btn" data-speed="5" title="Muy rápido">5×</button>
+    </div>
+
+    <div class="view-controls" id="view-controls">
+        <button class="view-btn" id="btn-toggle-constellations" title="Constelaciones">
+            <span class="view-icon">✦</span>
+            <span class="view-label">Constelaciones</span>
+        </button>
+        <button class="view-btn" id="btn-toggle-orbits" title="Órbitas">
+            <span class="view-icon">◎</span>
+            <span class="view-label">Órbitas</span>
+        </button>
+        <button class="view-btn" id="btn-toggle-labels" title="Nombres">
+            <span class="view-icon">Aa</span>
+            <span class="view-label">Nombres</span>
+        </button>
+    </div>
+
+    <!-- Panel de navegación interestelar -->
+    <div class="nav-panel" id="nav-panel">
+        <div class="nav-header">
+            <span class="nav-title">🧭 NAVEGACIÓN INTERESTELAR</span>
+            <button class="nav-close" id="nav-close">✕</button>
+        </div>
+        <div class="nav-body" id="nav-body"></div>
+    </div>
+    <button class="nav-toggle" id="nav-toggle" title="Navegación Interestelar">
+        <span>🧭</span>
+        <span class="nav-toggle-label">Explorar Universo</span>
+    </button>
+
+    <!-- Destino detail overlay -->
+    <div id="dest-detail" class="dest-detail">
+        <button class="dest-back" id="dest-back">◄ VOLVER AL SISTEMA SOLAR</button>
+        <div class="dest-detail-container">
+            <div class="dest-visual" id="dest-visual">
+                <canvas id="dest-canvas" width="400" height="400"></canvas>
+            </div>
+            <div class="dest-info">
+                <h1 id="dest-name"></h1>
+                <div class="planet-type" id="dest-subtitle"></div>
+                <p class="description" id="dest-desc"></p>
+                <div class="detail-section-title">
+                    <span class="section-icon">📡</span> DATOS CIENTÍFICOS
+                </div>
+                <div class="stats-grid" id="dest-stats"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip">
+        <div class="tt-name"></div>
+        <div class="tt-hint">Clic para viajar →</div>
+    </div>
+
+    <!-- Fallback: oculta la carga incluso si el script principal falla -->
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                var l = document.getElementById('loading');
+                if (l && !l.classList.contains('hidden')) l.classList.add('hidden');
+            }, 12000);
+        });
+    </script>
+    <!-- Three.js y dependencias vía CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <!-- Scripts del sistema solar (orden importa) -->
+    <script src="~/js/solar-destinations.js" asp-append-version="true"></script>
+    <script src="~/js/solar-api.js" asp-append-version="true"></script>
+    <script src="~/js/solar-script.js" asp-append-version="true"></script>
+    <script src="~/js/solar-navigator.js" asp-append-version="true"></script>
+</body>
+</html>

@@ -1,75 +1,332 @@
 @model AstronomiaApp.Models.ViewModels.ObjetoViewModel
 @{
     ViewData["Title"] = Model.Nombre;
+
+    var tipo = (Model.Tipo ?? "").ToLower();
+
+    var colorPrincipal = "#d8a15f";
+    var colorSecundario = "#facc15";
+    var emoji = "🪐";
+    var subtitulo = "Objeto astronómico";
+
+    if (tipo.Contains("estrella"))
+    {
+        colorPrincipal = "#facc15";
+        colorSecundario = "#f97316";
+        emoji = "☀️";
+        subtitulo = "Estrella";
+    }
+    else if (tipo.Contains("planeta"))
+    {
+        colorPrincipal = "#60a5fa";
+        colorSecundario = "#2563eb";
+        emoji = "🪐";
+        subtitulo = "Planeta";
+    }
+    else if (tipo.Contains("galaxia"))
+    {
+        colorPrincipal = "#a855f7";
+        colorSecundario = "#ec4899";
+        emoji = "🌌";
+        subtitulo = "Galaxia";
+    }
+    else if (tipo.Contains("constel"))
+    {
+        colorPrincipal = "#38bdf8";
+        colorSecundario = "#818cf8";
+        emoji = "✨";
+        subtitulo = "Constelación";
+    }
+    else if (tipo.Contains("sat"))
+    {
+        colorPrincipal = "#cbd5e1";
+        colorSecundario = "#64748b";
+        emoji = "🌙";
+        subtitulo = "Satélite natural";
+    }
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index" class="text-warning">Catálogo</a></li>
-        <li class="breadcrumb-item active text-light">@Model.Nombre</li>
-    </ol>
-</nav>
+<style>
+    body {
+        background:
+            radial-gradient(circle at 20% 30%, rgba(255,255,255,.04), transparent 18%),
+            radial-gradient(circle at 75% 40%, rgba(56,189,248,.08), transparent 25%),
+            radial-gradient(circle at 50% 90%, rgba(168,85,247,.08), transparent 28%),
+            #02030a;
+        color: #e5e7eb;
+    }
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card bg-secondary border-0 mb-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <h2 class="text-warning mb-0 me-3">@Model.Nombre</h2>
-                    <span class="badge bg-info text-dark fs-6">@Model.Tipo</span>
+    .detalle-space {
+        min-height: 78vh;
+        padding: 25px 0 40px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .detalle-space::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+            radial-gradient(#ffffff 1px, transparent 1px),
+            radial-gradient(#ffffff 1px, transparent 1px);
+        background-size: 90px 90px, 140px 140px;
+        background-position: 0 0, 45px 65px;
+        opacity: .18;
+        pointer-events: none;
+    }
+
+    .breadcrumb a {
+        color: @colorPrincipal !important;
+        text-decoration: none;
+    }
+
+    .hero-detalle {
+        display: grid;
+        grid-template-columns: 330px 1fr;
+        gap: 40px;
+        align-items: center;
+        margin-top: 25px;
+    }
+
+    .astro-visual {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 360px;
+    }
+
+    .planet-glow {
+        width: 230px;
+        height: 230px;
+        border-radius: 50%;
+        background:
+            radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), transparent 10%),
+            radial-gradient(circle at 35% 35%, @colorPrincipal, @colorSecundario 48%, #111827 80%);
+        box-shadow:
+            0 0 45px @colorPrincipal,
+            0 0 110px rgba(255,255,255,.15),
+            inset -25px -25px 45px rgba(0,0,0,.55);
+        position: relative;
+        animation: flotar 4s ease-in-out infinite;
+    }
+
+    .planet-glow::after {
+        content: "";
+        position: absolute;
+        inset: -35px;
+        border-radius: 50%;
+        background: radial-gradient(circle, @colorPrincipal 0%, transparent 62%);
+        opacity: .22;
+        filter: blur(10px);
+        z-index: -1;
+    }
+
+    @@keyframes flotar {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-12px); }
+    }
+
+    .detalle-title {
+        color: @colorPrincipal;
+        font-size: 46px;
+        font-weight: 900;
+        margin-bottom: 4px;
+        text-shadow: 0 0 18px rgba(255,255,255,.16);
+    }
+
+    .detalle-subtitle {
+        color: #8b8fa3;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        font-size: 13px;
+        margin-bottom: 22px;
+    }
+
+    .detalle-desc {
+        color: #d1d5db;
+        max-width: 850px;
+        line-height: 1.7;
+        font-weight: 500;
+    }
+
+    .section-title {
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        font-size: 13px;
+        margin: 30px 0 14px;
+        border-bottom: 1px solid rgba(148,163,184,.18);
+        padding-bottom: 10px;
+    }
+
+    .data-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+    }
+
+    .data-card {
+        background: linear-gradient(135deg, rgba(15,23,42,.9), rgba(2,6,23,.7));
+        border: 1px solid rgba(34,197,94,.25);
+        border-radius: 14px;
+        padding: 15px;
+        box-shadow: 0 0 22px rgba(0,0,0,.25);
+    }
+
+    .data-label {
+        color: #8b8fa3;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+
+    .data-value {
+        color: @colorPrincipal;
+        font-size: 18px;
+        font-weight: 800;
+        margin-top: 5px;
+    }
+
+    .relations-box {
+        margin-top: 28px;
+    }
+
+    .relacion-item {
+        display: inline-block;
+        margin: 6px 6px 0 0;
+        padding: 7px 14px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.12);
+        color: #e5e7eb;
+        text-decoration: none;
+        font-size: 13px;
+    }
+
+    .relacion-item:hover {
+        color: @colorPrincipal;
+        border-color: @colorPrincipal;
+        box-shadow: 0 0 14px rgba(255,255,255,.18);
+    }
+
+    .detalle-actions {
+        margin-top: 28px;
+    }
+
+    .btn-space {
+        border-radius: 999px;
+        padding: 8px 18px;
+    }
+
+    @@media (max-width: 900px) {
+        .hero-detalle {
+            grid-template-columns: 1fr;
+        }
+
+        .data-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .detalle-title {
+            font-size: 36px;
+        }
+    }
+</style>
+
+<div class="detalle-space">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-action="Index">Catálogo</a>
+            </li>
+            <li class="breadcrumb-item active text-light">@Model.Nombre</li>
+        </ol>
+    </nav>
+
+    <div class="hero-detalle">
+
+        <div class="astro-visual">
+            <div class="planet-glow"></div>
+        </div>
+
+        <div>
+            <h1 class="detalle-title">@Model.Nombre</h1>
+            <div class="detalle-subtitle">@subtitulo · @Model.Tipo</div>
+
+            @if (!string.IsNullOrEmpty(Model.Descripcion))
+            {
+                <p class="detalle-desc">@Model.Descripcion</p>
+            }
+            else
+            {
+                <p class="detalle-desc">
+                    Información astronómica registrada en el sistema para este objeto.
+                </p>
+            }
+
+            <div class="section-title">@emoji Datos científicos</div>
+
+            <div class="data-grid">
+                <div class="data-card">
+                    <div class="data-label">Masa</div>
+                    <div class="data-value">@(Model.MasaKg.HasValue ? $"{Model.MasaKg.Value:E3} kg" : "—")</div>
                 </div>
 
-                @if (!string.IsNullOrEmpty(Model.Descripcion))
-                {
-                    <p class="text-light">@Model.Descripcion</p>
-                }
+                <div class="data-card">
+                    <div class="data-label">Radio medio</div>
+                    <div class="data-value">@(Model.RadioKm.HasValue ? $"{Model.RadioKm.Value:N0} km" : "—")</div>
+                </div>
 
-                <table class="table table-dark table-sm mt-3">
-                    <tbody>
-                        <tr>
-                            <th class="text-warning" style="width:40%">Masa</th>
-                            <td>@(Model.MasaKg.HasValue ? $"{Model.MasaKg.Value:E3} kg" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Radio medio</th>
-                            <td>@(Model.RadioKm.HasValue ? $"{Model.RadioKm.Value:N0} km" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Distancia a la Tierra</th>
-                            <td>@(Model.DistanciaTierraAl.HasValue ? $"{Model.DistanciaTierraAl.Value:N4} UA" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Temperatura</th>
-                            <td>@(Model.TemperaturaK.HasValue ? $"{Model.TemperaturaK.Value:N0} K" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Luminosidad</th>
-                            <td>@(Model.Luminosidad.HasValue ? $"{Model.Luminosidad.Value:N4} L☉" : "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Sistema planetario</th>
-                            <td>@(Model.Sistema ?? "—")</td>
-                        </tr>
-                        <tr>
-                            <th class="text-warning">Constelación</th>
-                            <td>@(Model.Constelacion ?? "—")</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="data-card">
+                    <div class="data-label">Distancia a la Tierra</div>
+                    <div class="data-value">@(Model.DistanciaTierraAl.HasValue ? $"{Model.DistanciaTierraAl.Value:N4} UA" : "—")</div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Temperatura</div>
+                    <div class="data-value">@(Model.TemperaturaK.HasValue ? $"{Model.TemperaturaK.Value:N0} K" : "—")</div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Luminosidad</div>
+                    <div class="data-value">@(Model.Luminosidad.HasValue ? $"{Model.Luminosidad.Value:N4} L☉" : "—")</div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Sistema planetario</div>
+                    <div class="data-value">@(Model.Sistema ?? "—")</div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Constelación</div>
+                    <div class="data-value">@(Model.Constelacion ?? "—")</div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">Tipo</div>
+                    <div class="data-value">@Model.Tipo</div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-label">ID del objeto</div>
+                    <div class="data-value">@Model.Id</div>
+                </div>
+            </div>
+
+            <div class="relations-box">
+                <div class="section-title">🌌 Relaciones astronómicas</div>
+                <div id="vecinos-container">
+                    <span class="text-muted small">Cargando relaciones...</span>
+                </div>
+            </div>
+
+            <div class="detalle-actions">
+                <a asp-action="Index" class="btn btn-outline-light btn-sm btn-space me-2">← Catálogo</a>
+                <a asp-controller="Grafo" asp-action="Index" class="btn btn-outline-warning btn-sm btn-space">Ver en Grafo</a>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card bg-secondary border-0 mb-3">
-            <div class="card-header text-warning fw-bold">Relaciones</div>
-            <div class="card-body" id="vecinos-container">
-                <div class="text-muted small">Cargando...</div>
-            </div>
-        </div>
-
-        <a asp-action="Index" class="btn btn-outline-light btn-sm me-2">← Catálogo</a>
-        <a asp-controller="Grafo" asp-action="Index" class="btn btn-outline-warning btn-sm">Ver en Grafo</a>
     </div>
 </div>
 
@@ -77,20 +334,27 @@
 <script>
 (async function () {
     const id = @Model.Id;
-    const r = await fetch(`/api/grafo/vecinos/${id}`);
-    const d = await r.json();
     const cont = document.getElementById('vecinos-container');
-    if (!d.vecinos || d.vecinos.length === 0) {
-        cont.innerHTML = '<span class="text-muted small">Sin relaciones registradas.</span>';
-        return;
+
+    try {
+        const r = await fetch(`/api/grafo/vecinos/${id}`);
+        const d = await r.json();
+
+        if (!d.vecinos || d.vecinos.length === 0) {
+            cont.innerHTML = '<span class="text-muted small">Sin relaciones registradas.</span>';
+            return;
+        }
+
+        cont.innerHTML = d.vecinos.map(v =>
+            `<a href="/Objetos/Detalle/${v.id}" class="relacion-item">
+                ${v.nombre}
+                <span class="text-warning ms-1">${v.tipoRelacion || 'relación'}</span>
+             </a>`
+        ).join('');
+
+    } catch (e) {
+        cont.innerHTML = '<span class="text-danger small">Error al cargar relaciones.</span>';
     }
-    cont.innerHTML = d.vecinos.map(v =>
-        `<div class="mb-2">
-            <a href="/Objetos/Detalle/${v.id}" class="text-warning fw-bold">${v.nombre}</a>
-            <span class="badge bg-dark text-info ms-1">${v.tipoRelacion || 'relación'}</span>
-            <div class="text-muted small">${v.distanciaAl ? v.distanciaAl.toFixed(4) + ' UA' : ''}</div>
-         </div>`
-    ).join('');
 })();
 </script>
 }

@@ -7,8 +7,13 @@ namespace AstronomiaApp.Controllers;
 public class ObjetosController : Controller
 {
     private readonly ObjetoService _service;
+    private readonly IConfiguration _configuration;
 
-    public ObjetosController(ObjetoService service) => _service = service;
+    public ObjetosController(ObjetoService service, IConfiguration configuration)
+    {
+        _service = service;
+        _configuration = configuration;
+    }
 
     // GET /Objetos  o  /
     public async Task<IActionResult> Index(string? tipo)
@@ -114,5 +119,12 @@ public class ObjetosController : Controller
 
         ViewBag.Tipos = tipos;
         return View("Index", vm);
+    }
+    
+    // GET /Objetos/Sistema
+    public IActionResult Sistema()
+    {
+        ViewData["ApiKey"] = _configuration["SolarSystemApi:ApiKey"] ?? "";
+        return View();
     }
 }
