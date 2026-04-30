@@ -154,14 +154,14 @@
             }, 12000);
         });
     </script>
-    <!-- Three.js y dependencias vía CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.js"></script>
+    <!-- Librerías (UMD) — versión original probada -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-    <!-- Scripts del sistema solar (orden importa) -->
-    <script src="~/js/solar-destinations.js" asp-append-version="true"></script>
+    <!-- Scripts del sistema solar (orden original) -->
     <script src="~/js/solar-api.js" asp-append-version="true"></script>
+    <script src="~/js/solar-destinations.js" asp-append-version="true"></script>
     <script src="~/js/solar-script.js" asp-append-version="true"></script>
     <script src="~/js/solar-navigator.js" asp-append-version="true"></script>
 </body>

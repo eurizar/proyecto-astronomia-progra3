@@ -7,8 +7,9 @@ const SolarAPI = (() => {
     const BASE = 'https://api.le-systeme-solaire.net/rest';
     const API_KEY = document.getElementById('solar-canvas-container')?.dataset.apiKey ?? '';
 
+    // API IMCCE es pública: omitir Authorization para evitar preflight CORS.
+    // Solo enviar Accept (request "simple" → sin OPTIONS).
     const HEADERS = {
-        'Authorization': 'Bearer ' + API_KEY,
         'Accept': 'application/json'
     };
 

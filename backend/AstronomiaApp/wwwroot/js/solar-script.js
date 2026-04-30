@@ -366,22 +366,22 @@ const textureLoader = new THREE.TextureLoader();
 textureLoader.crossOrigin = 'anonymous';
 
 const TEXTURE_URLS = {
-    sol:      'https://www.solarsystemscope.com/textures/download/2k_sun.jpg',
-    mercurio: 'https://www.solarsystemscope.com/textures/download/2k_mercury.jpg',
-    venus:    'https://www.solarsystemscope.com/textures/download/2k_venus_surface.jpg',
-    tierra:   'https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg',
-    marte:    'https://www.solarsystemscope.com/textures/download/2k_mars.jpg',
-    jupiter:  'https://www.solarsystemscope.com/textures/download/2k_jupiter.jpg',
-    saturno:  'https://www.solarsystemscope.com/textures/download/2k_saturn.jpg',
-    urano:    'https://www.solarsystemscope.com/textures/download/2k_uranus.jpg',
-    neptuno:  'https://www.solarsystemscope.com/textures/download/2k_neptune.jpg',
+    sol:      '/img/textures/2k_sun.jpg',
+    mercurio: '/img/textures/2k_mercury.jpg',
+    venus:    '/img/textures/2k_venus_surface.jpg',
+    tierra:   '/img/textures/2k_earth_daymap.jpg',
+    marte:    '/img/textures/2k_mars.jpg',
+    jupiter:  '/img/textures/2k_jupiter.jpg',
+    saturno:  '/img/textures/2k_saturn.jpg',
+    urano:    '/img/textures/2k_uranus.jpg',
+    neptuno:  '/img/textures/2k_neptune.jpg',
 };
 
 const TEXTURE_EXTRAS = {
-    tierra_night:  'https://www.solarsystemscope.com/textures/download/2k_earth_nightmap.jpg',
-    tierra_clouds: 'https://www.solarsystemscope.com/textures/download/2k_earth_clouds.jpg',
-    saturn_ring:   'https://www.solarsystemscope.com/textures/download/2k_saturn_ring_alpha.png',
-    stars:         'https://www.solarsystemscope.com/textures/download/2k_stars_milky_way.jpg',
+    tierra_night:  '/img/textures/2k_earth_nightmap.jpg',
+    tierra_clouds: '/img/textures/2k_earth_clouds.jpg',
+    saturn_ring:   '/img/textures/2k_saturn_ring_alpha.png',
+    stars:         '/img/textures/2k_stars_milky_way.jpg',
 };
 
 // Textura procedural como fallback
