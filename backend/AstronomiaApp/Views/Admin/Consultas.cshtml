@@ -1,0 +1,182 @@
+@using AstronomiaApp.Models
+@{
+    ViewData["Title"] = "Bitácora";
+    var enCola    = (IEnumerable<ConsultaLog>)ViewBag.EnCola;
+    var historial = (IEnumerable<ConsultaLog>)ViewBag.Historial;
+    int tamanio      = (int)ViewBag.TamanioActual;
+    int paginaActual = (int)ViewBag.PaginaActual;
+    int totalPaginas = (int)ViewBag.TotalPaginas;
+    int total        = (int)ViewBag.Total;
+
+    var gtZone = TimeZoneInfo.FindSystemTimeZoneById(
+        OperatingSystem.IsWindows() ? "Central America Standard Time" : "America/Guatemala");
+    DateTime ToGT(DateTime utc) => TimeZoneInfo.ConvertTimeFromUtc(
+        DateTime.SpecifyKind(utc, DateTimeKind.Utc), gtZone);
+
+    string TypeCss(string? t) => (t ?? "").ToLowerInvariant() switch {
+        "catalogo"  => "catalogo",
+        "detalle"   => "detalle",
+        "busqueda"  => "busqueda",
+        "grafo"     => "grafo",
+        "sistema3d" => "sistema3d",
+        _           => "default"
+    };
+}
+
+<link rel="stylesheet" href="~/css/bitacora.css" asp-append-version="true" />
+<div class="bitacora-atmos" aria-hidden="true"></div>
+
+<section class="bitacora-page">
+
+    @* ── Header ─────────────────────────────────────────────────────────── *@
+    <header class="bit-header">
+        <div class="bit-meta">
+            <span>Bitácora</span>
+            <span class="bit-meta-sep">·</span>
+            <span>Observatorio</span>
+            <span class="bit-meta-sep">·</span>
+            <span>Cola FIFO</span>
+        </div>
+        <div class="bit-titlebar">
+            <h1 class="bit-title-main">Consultas</h1>
+            <div class="bit-counter">
+                <span class="bit-counter-val">@total</span>
+                <span class="bit-counter-lbl">registros · pág @paginaActual / @totalPaginas</span>
+            </div>
+        </div>
+        <div class="bit-divider"></div>
+    </header>
+
+    @* ── Cola en memoria ─────────────────────────────────────────────────── *@
+    <div class="bit-section">
+        <div class="bit-section-head">
+            <span class="bit-section-label">
+                Cola en memoria
+                <span class="bit-badge">@tamanio pendientes</span>
+            </span>
+            <form method="post" asp-action="Flush" asp-controller="Admin">
+                <button class="flush-btn" type="submit">Flush BD</button>
+            </form>
+        </div>
+
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th style="text-align:right">#</th>
+                    <th>Tipo</th>
+                    <th>Parámetros</th>
+                    <th style="text-align:right">Resultados</th>
+                    <th style="text-align:right">Duración ms</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!enCola.Any())
+                {
+                    <tr><td colspan="6" class="log-empty">
+                        <p>Cola vacía — flush automático cada 5 consultas</p>
+                    </td></tr>
+                }
+                else
+                {
+                    int i = 1;
+                    @foreach (var c in enCola)
+                    {
+                        <tr>
+                            <td class="td-id">@i</td>
+                            <td><span class="type-tag @TypeCss(c.TipoConsulta)">@c.TipoConsulta</span></td>
+                            <td class="td-param">@c.Parametros</td>
+                            <td class="td-num @(c.ResultadoCount == null ? "empty" : "")">@(c.ResultadoCount?.ToString() ?? "—")</td>
+                            <td class="td-num @(c.DuracionMs == null ? "empty" : "")">@(c.DuracionMs?.ToString() ?? "—")</td>
+                            <td class="td-date">@ToGT(c.Fecha).ToString("HH:mm:ss")</td>
+                        </tr>
+                        i++;
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* ── Historial en BD ──────────────────────────────────────────────────── *@
+    <div class="bit-section" style="margin-top:3rem">
+        <div class="bit-section-head">
+            <span class="bit-section-label secondary">
+                Registros en BD
+                <span class="bit-badge">@total total</span>
+            </span>
+        </div>
+
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th style="text-align:right">ID</th>
+                    <th>Tipo</th>
+                    <th>Parámetros</th>
+                    <th style="text-align:right">Resultados</th>
+                    <th style="text-align:right">Duración ms</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!historial.Any())
+                {
+                    <tr><td colspan="6" class="log-empty">
+                        <p>Sin registros aún</p>
+                    </td></tr>
+                }
+                else
+                {
+                    @foreach (var c in historial)
+                    {
+                        <tr>
+                            <td class="td-id">@c.Id</td>
+                            <td><span class="type-tag @TypeCss(c.TipoConsulta)">@c.TipoConsulta</span></td>
+                            <td class="td-param">@c.Parametros</td>
+                            <td class="td-num @(c.ResultadoCount == null ? "empty" : "")">@(c.ResultadoCount?.ToString() ?? "—")</td>
+                            <td class="td-num @(c.DuracionMs == null ? "empty" : "")">@(c.DuracionMs?.ToString() ?? "—")</td>
+                            <td class="td-date">@ToGT(c.Fecha).ToString("dd/MM HH:mm:ss")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* ── Paginación ───────────────────────────────────────────────────────── *@
+    @if (totalPaginas > 1)
+    {
+        var pageSet = new SortedSet<int> { 1, totalPaginas };
+        for (int p = paginaActual - 2; p <= paginaActual + 2; p++)
+            if (p >= 1 && p <= totalPaginas) pageSet.Add(p);
+        var pages = pageSet.ToList();
+
+        <nav class="bit-pager" aria-label="Paginación">
+            <span class="bit-pager-meta">
+                Página <strong>@paginaActual</strong> de <strong>@totalPaginas</strong>
+                &nbsp;·&nbsp; <strong>@total</strong> registros
+            </span>
+            <div class="bit-pager-controls">
+                <a class="pgr-btn @(paginaActual == 1 ? "disabled" : "")"
+                   asp-action="Consultas" asp-route-pagina="@(paginaActual - 1)"
+                   aria-label="Anterior">«</a>
+
+                @{ int? last = null; }
+                @foreach (var p in pages)
+                {
+                    if (last.HasValue && p - last.Value > 1)
+                    {
+                        <span style="color:var(--muted);padding:0 .3rem;font-family:'JetBrains Mono',monospace;font-size:.8rem;">…</span>
+                    }
+                    <a class="pgr-page @(p == paginaActual ? "current" : "")"
+                       asp-action="Consultas" asp-route-pagina="@p">@p</a>
+                    last = p;
+                }
+
+                <a class="pgr-btn @(paginaActual == totalPaginas ? "disabled" : "")"
+                   asp-action="Consultas" asp-route-pagina="@(paginaActual + 1)"
+                   aria-label="Siguiente">»</a>
+            </div>
+        </nav>
+    }
+
+</section>

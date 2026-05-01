@@ -1,0 +1,374 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Bitácora de Consultas — misma familia visual que el Catálogo
+   Cormorant Garamond (títulos) + JetBrains Mono (datos/labels)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+
+.bitacora-page {
+    --cosmos-0:   #060812;
+    --cosmos-1:   #0a0d18;
+    --cosmos-2:   #11151f;
+    --cosmos-3:   #1a1f2c;
+    --cream:      #f3ead4;
+    --cream-2:    #d4cbb0;
+    --cream-3:    #a39b85;
+    --muted:      #6a6657;
+    --gold:       #d4a657;
+    --gold-bright:#f3c87c;
+    --gold-deep:  #a07d35;
+    --cyan:       #7eb6cd;
+    --cyan-deep:  #3a6678;
+    --line:       #2a3346;
+    --line-2:     #161b27;
+    --red-muted:  #c45046;
+
+    color: var(--cream);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    padding: 1.5rem 0 4rem;
+    min-height: calc(100vh - 100px);
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Atmósfera de fondo ─────────────────────────────────────────────── */
+.bitacora-atmos {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 60% 45% at 20% 10%, rgba(126,182,205,0.05), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 80% 90%, rgba(212,166,87,0.05), transparent 60%),
+        #060812;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.bit-header {
+    padding: 2rem 0 2.25rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.bit-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--cream-3);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+.bit-meta-sep { color: var(--gold); }
+
+.bit-titlebar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.bit-title-main {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 4rem;
+    font-weight: 500;
+    font-style: italic;
+    line-height: 0.92;
+    color: var(--cream);
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 40px rgba(240,230,208,0.07);
+    margin: 0;
+}
+
+.bit-counter {
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+    border-left: 1px solid var(--line);
+    padding-left: 1.5rem;
+    flex-shrink: 0;
+}
+
+.bit-counter-val {
+    display: block;
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--gold-bright);
+    line-height: 1;
+    font-feature-settings: 'tnum';
+    letter-spacing: -0.02em;
+}
+
+.bit-counter-lbl {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cream-3);
+    margin-top: 0.45rem;
+}
+
+.bit-divider {
+    margin: 2rem 0 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent 0%, var(--line) 15%, var(--gold-deep) 50%, var(--line) 85%, transparent);
+    position: relative;
+}
+.bit-divider::after {
+    content: '⊛';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    background: var(--cosmos-0);
+    padding: 0 1.25rem;
+    color: var(--gold);
+    font-size: 0.9rem;
+}
+
+/* ── Sección card ───────────────────────────────────────────────────── */
+.bit-section {
+    margin-top: 2.5rem;
+}
+
+.bit-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--gold-deep);
+    margin-bottom: 0;
+    gap: 1rem;
+}
+
+.bit-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.bit-section-label.secondary { color: var(--cream-2); }
+.bit-section-label.secondary .bit-badge { background: rgba(163,155,133,0.15); color: var(--cream-3); border-color: rgba(163,155,133,0.3); }
+
+.bit-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.7rem;
+    background: rgba(212,166,87,0.12);
+    border: 1px solid rgba(212,166,87,0.35);
+    color: var(--gold-bright);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    font-weight: 500;
+}
+
+/* ── Botón Flush ────────────────────────────────────────────────────── */
+.flush-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1rem;
+    border: 1px solid var(--gold-deep);
+    background: rgba(17,21,31,0.9);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    font-weight: 500;
+}
+.flush-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold-bright);
+    background: rgba(212,166,87,0.1);
+}
+.flush-btn::after { content: '→'; }
+
+/* ── Tabla Logbook ──────────────────────────────────────────────────── */
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+}
+
+.log-table thead tr {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cream-2);
+    background: rgba(212,166,87,0.04);
+    border-top: 1px solid var(--line);
+}
+
+.log-table thead th {
+    padding: 0.75rem 0.9rem;
+    font-weight: 500;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+.log-table tbody tr {
+    border-bottom: 1px dashed rgba(42,51,70,0.6);
+    transition: background 0.15s;
+}
+
+.log-table tbody tr:hover {
+    background: rgba(212,166,87,0.04);
+}
+
+.log-table tbody td {
+    padding: 0.7rem 0.9rem;
+    vertical-align: middle;
+}
+
+/* número de fila / id */
+.td-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--cream-3);
+    font-feature-settings: 'tnum';
+    letter-spacing: 0.05em;
+    text-align: right;
+    width: 50px;
+}
+
+/* tipo badge */
+.type-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.22rem 0.6rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.type-tag.catalogo  { color: var(--cyan);       border: 1px solid rgba(126,182,205,0.4); background: rgba(126,182,205,0.08); }
+.type-tag.detalle   { color: var(--gold);        border: 1px solid rgba(212,166,87,0.4);  background: rgba(212,166,87,0.08); }
+.type-tag.busqueda  { color: #b48fe8;            border: 1px solid rgba(180,143,232,0.4); background: rgba(180,143,232,0.08); }
+.type-tag.grafo     { color: #7dcc8a;            border: 1px solid rgba(125,204,138,0.4); background: rgba(125,204,138,0.08); }
+.type-tag.sistema3d { color: var(--cream-3);     border: 1px solid rgba(163,155,133,0.35); background: rgba(163,155,133,0.06); }
+.type-tag.default   { color: var(--cream-2);     border: 1px solid var(--line); background: transparent; }
+
+/* parámetros — serif legible */
+.td-param {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-style: italic;
+    color: var(--cream);
+    font-weight: 500;
+}
+
+/* numéricos — monospace tabulado */
+.td-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    color: var(--cream);
+    font-feature-settings: 'tnum';
+    text-align: right;
+    white-space: nowrap;
+}
+
+.td-num.empty, .td-muted {
+    color: var(--muted);
+}
+
+/* fecha */
+.td-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--cream-3);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+/* ── Estado vacío ───────────────────────────────────────────────────── */
+.log-empty {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    border-bottom: 1px dashed rgba(42,51,70,0.6);
+}
+
+.log-empty p {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+}
+
+/* ── Paginación ─────────────────────────────────────────────────────── */
+.bit-pager {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.bit-pager-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cream-2);
+}
+
+.bit-pager-meta strong { color: var(--gold-bright); font-weight: 500; }
+
+.bit-pager-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.pgr-btn, .pgr-page {
+    min-width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    border: 1px solid var(--line);
+    background: rgba(17,21,31,0.9);
+    color: var(--cream);
+    text-decoration: none;
+    transition: border-color 0.18s, color 0.18s, background 0.18s;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+}
+
+.pgr-btn:hover, .pgr-page:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(212,166,87,0.08);
+}
+
+.pgr-page.current {
+    background: var(--gold);
+    color: var(--cosmos-0);
+    border-color: var(--gold);
+    font-weight: 600;
+}
+
+.pgr-btn.disabled {
+    opacity: 0.2;
+    pointer-events: none;
+}
