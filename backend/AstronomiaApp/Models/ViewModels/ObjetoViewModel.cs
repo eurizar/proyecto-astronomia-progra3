@@ -35,6 +35,25 @@ public class BusquedaViewModel
     public bool BusquedaExacta { get; set; }
 }
 
+public class BusquedaRangoViewModel
+{
+    public string Campo { get; set; } = "distancia";
+    public double? Min { get; set; }
+    public double? Max { get; set; }
+    public IEnumerable<ObjetoViewModel> Resultados { get; set; } = new List<ObjetoViewModel>();
+    public int TotalEncontrados { get; set; }
+    public bool BusquedaRealizada { get; set; }
+    public int PaginaActual { get; set; } = 1;
+    public int TotalPaginas { get; set; } = 1;
+
+    public string CampoLabel => Campo.ToLower() switch {
+        "masa"        => "Masa (kg)",
+        "radio"       => "Radio (km)",
+        "temperatura" => "Temperatura (K)",
+        _             => "Distancia (UA)"
+    };
+}
+
 public class GrafoViewModel
 {
     public IEnumerable<NodoGrafoViewModel> Nodos { get; set; } = new List<NodoGrafoViewModel>();

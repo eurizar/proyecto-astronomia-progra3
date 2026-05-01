@@ -8,8 +8,13 @@ namespace AstronomiaApp.Controllers.Api;
 public class AdminApiController : ControllerBase
 {
     private readonly ObjetoService _service;
+    private readonly ConsultaService _consultas;
 
-    public AdminApiController(ObjetoService service) => _service = service;
+    public AdminApiController(ObjetoService service, ConsultaService consultas)
+    {
+        _service = service;
+        _consultas = consultas;
+    }
 
     // POST /api/admin/importar
     [HttpPost("importar")]
@@ -25,6 +30,27 @@ public class AdminApiController : ControllerBase
             actualizados,
             errores,
             duracionMs = (int)sw.ElapsedMilliseconds
+        });
+    }
+
+    // GET /api/admin/cola
+    [HttpGet("cola")]
+    public IActionResult EstadoCola()
+    {
+        var enCola = _consultas.ObtenerEnCola().Select(c => new
+        {
+            tipo = c.TipoConsulta,
+            parametros = c.Parametros,
+            resultados = c.ResultadoCount,
+            duracionMs = c.DuracionMs,
+            fecha = c.Fecha
+        });
+
+        return Ok(new
+        {
+            tamanio = _consultas.TamanioActual,
+            flushCada = 5,
+            pendientes = enCola
         });
     }
 

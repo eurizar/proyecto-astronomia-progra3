@@ -128,12 +128,16 @@
 
         destDetail.classList.add('visible');
         if (destBack) destBack.classList.add('visible');
+        const hudCatalog = document.querySelector('.hud-catalog');
+        if (hudCatalog) hudCatalog.style.visibility = 'hidden';
     }
 
     // ── Close destination ──────────────────────────────────────────────
     function closeDest() {
         destDetail.classList.remove('visible');
         if (destBack) destBack.classList.remove('visible');
+        const hudCatalog = document.querySelector('.hud-catalog');
+        if (hudCatalog) hudCatalog.style.visibility = 'visible';
         if (animFrame) cancelAnimationFrame(animFrame);
         animFrame = null;
         currentDest = null;

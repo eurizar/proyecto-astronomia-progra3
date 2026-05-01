@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // MVC + Razor Views
 builder.Services.AddControllersWithViews();
+builder.Services.AddSession(o => { o.IdleTimeout = TimeSpan.FromMinutes(30); o.Cookie.IsEssential = true; });
+builder.Services.AddHttpContextAccessor();
 
 // Entity Framework Core con SQL Server
 builder.Services.AddDbContext<AstronomiaDbContext>(options =>
@@ -25,6 +27,8 @@ builder.Services.AddHttpClient<SolarSystemApiClient>((sp, client) =>
 // Servicios de dominio
 builder.Services.AddScoped<ObjetoService>();
 builder.Services.AddScoped<GrafoService>();
+builder.Services.AddSingleton<ConsultaService>();
+builder.Services.AddScoped<HistorialService>();
 
 var app = builder.Build();
 
@@ -36,6 +40,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseSession();
 app.UseRouting();
 app.UseAuthorization();
 

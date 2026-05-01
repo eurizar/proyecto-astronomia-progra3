@@ -1050,7 +1050,9 @@ function showPlanetDetail(id) {
     document.getElementById('detail-desc').textContent = data.desc;
 
     const visual  = document.getElementById('detail-planet-visual');
-    const bigSize = Math.min(Math.max(data.size * 4, 120), 280);
+    const isMobile = window.innerWidth <= 768;
+    const maxSize  = isMobile ? 160 : 280;
+    const bigSize  = Math.min(Math.max(data.size * 4, isMobile ? 90 : 120), maxSize);
 
     // Usar textura real como imagen del planeta en detalle
     const texUrl = TEXTURE_URLS[id];
@@ -1169,6 +1171,68 @@ function goBack() {
 
 document.getElementById('btn-back').addEventListener('click', goBack);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') goBack(); });
+
+// ── Controles móviles: zoom + home ────────────────────────────────────────────
+
+(function initMobileControls() {
+    const HOME_THRESHOLD = 2200; // distancia mínima para mostrar botón home
+    const ZOOM_FACTOR    = 0.55; // factor zoom por tap (más cercano = más zoom)
+    const ZOOM_DURATION  = 0.7;  // segundos animación
+
+    const btnZoomIn  = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnHome    = document.getElementById('btn-home');
+
+    let zoomTween = null;
+
+    function doZoom(factor) {
+        if (currentView !== 'system') return;
+        if (zoomTween) zoomTween.kill();
+
+        const dir  = camera.position.clone().normalize();
+        const dist = camera.position.length();
+        const next = Math.min(Math.max(dist * factor, controls.minDistance), controls.maxDistance);
+        const target = dir.multiplyScalar(next);
+
+        zoomTween = gsap.to(camera.position, {
+            x: target.x, y: target.y, z: target.z,
+            duration: ZOOM_DURATION,
+            ease: 'power2.out',
+            onUpdate: () => controls.update(),
+        });
+    }
+
+    btnZoomIn .addEventListener('click', () => doZoom(ZOOM_FACTOR));
+    btnZoomOut.addEventListener('click', () => doZoom(1 / ZOOM_FACTOR));
+
+    btnHome.addEventListener('click', () => {
+        if (currentView !== 'system') return;
+        gsap.to(camera.position, { x: 0, y: 900, z: 1400, duration: 2, ease: 'power2.inOut',
+            onUpdate: () => controls.update() });
+        gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 2, ease: 'power2.inOut' });
+    });
+
+    // Mostrar/ocultar botón home según distancia de cámara — se evalúa en animate()
+    const origAnimate = window._mobileHomeCheck;
+    function checkHomeBtn() {
+        if (currentView === 'system') {
+            const far = camera.position.length() > HOME_THRESHOLD;
+            btnHome.classList.toggle('visible', far);
+        } else {
+            btnHome.classList.remove('visible');
+        }
+    }
+    // Enganchar al loop de animación via MutationObserver no disponible en canvas;
+    // usamos setInterval liviano (16ms ≈ 60fps check, pero solo toggle DOM cuando cambia)
+    let lastFar = false;
+    setInterval(() => {
+        const far = currentView === 'system' && camera.position.length() > HOME_THRESHOLD;
+        if (far !== lastFar) {
+            btnHome.classList.toggle('visible', far);
+            lastFar = far;
+        }
+    }, 200);
+})();
 
 // ── Pantalla de carga ─────────────────────────────────────────────────────────
 

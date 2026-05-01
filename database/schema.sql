@@ -121,6 +121,7 @@ CREATE TABLE consultas_log (
     tipo_consulta   NVARCHAR(50) NOT NULL,
     parametros      NVARCHAR(MAX),
     resultado_count INT,
+    duracion_ms     INT,
     fecha           DATETIME2 DEFAULT GETDATE()
 );
 GO

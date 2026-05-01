@@ -29,6 +29,8 @@
   let nodos = {};
   let offset = { x: 0, y: 0 };
   let scale = 1;
+  let targetScale = 1;
+  let targetOffset = { x: 0, y: 0 };
 
   let dragging = false;
   let lastMouse = null;
@@ -41,8 +43,8 @@
 
   function ajustarTamanio() {
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width || 900;
-    canvas.height = rect.height || 560;
+    canvas.width  = Math.max(rect.width,  300);
+    canvas.height = Math.max(rect.height, 300);
   }
 
   function crearEstrellas() {
@@ -499,6 +501,8 @@
     if (dragging && lastMouse) {
       offset.x += e.clientX - lastMouse.x;
       offset.y += e.clientY - lastMouse.y;
+      targetOffset.x = offset.x;
+      targetOffset.y = offset.y;
       lastMouse = { x: e.clientX, y: e.clientY };
       canvas.style.cursor = 'grabbing';
       return;
@@ -546,6 +550,98 @@
     lastMouse = null;
   });
 
+  // ── Touch: drag (1 dedo) y pinch-zoom (2 dedos) ───────────────────────────
+
+  let lastTouches = null;
+
+  let touchStartPos = null;
+
+  function hitTestTouch(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (clientX - rect.left  - offset.x) / scale;
+    const my = (clientY - rect.top   - offset.y) / scale;
+    for (const n of Object.values(nodos)) {
+      const dx = n.x - mx;
+      const dy = n.y - my;
+      if (Math.sqrt(dx * dx + dy * dy) < 18 / scale) return n;
+    }
+    return null;
+  }
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const touches = Array.from(e.touches);
+    lastTouches = touches.map(t => ({ x: t.clientX, y: t.clientY }));
+    if (touches.length === 1) {
+      touchStartPos = { x: touches[0].clientX, y: touches[0].clientY };
+    } else {
+      touchStartPos = null;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const touches = Array.from(e.touches);
+
+    if (touches.length === 1 && lastTouches && lastTouches.length === 1) {
+      // Pan
+      const dx = touches[0].clientX - lastTouches[0].x;
+      const dy = touches[0].clientY - lastTouches[0].y;
+      offset.x += dx;
+      offset.y += dy;
+      targetOffset.x = offset.x;
+      targetOffset.y = offset.y;
+    } else if (touches.length === 2 && lastTouches && lastTouches.length === 2) {
+      // Pinch zoom
+      const prev = lastTouches;
+      const prevDist = Math.hypot(prev[1].x - prev[0].x, prev[1].y - prev[0].y);
+      const currDist = Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
+      const factor   = currDist / prevDist;
+
+      const midX = (touches[0].clientX + touches[1].clientX) / 2;
+      const midY = (touches[0].clientY + touches[1].clientY) / 2;
+      const rect  = canvas.getBoundingClientRect();
+      const cx    = midX - rect.left;
+      const cy    = midY - rect.top;
+
+      const worldX   = (cx - offset.x) / scale;
+      const worldY   = (cy - offset.y) / scale;
+      const newScale = Math.max(0.08, Math.min(5, scale * factor));
+      scale    = newScale;
+      targetScale = newScale;
+      offset.x = cx - worldX * scale;
+      offset.y = cy - worldY * scale;
+      targetOffset.x = offset.x;
+      targetOffset.y = offset.y;
+    }
+
+    lastTouches = touches.map(t => ({ x: t.clientX, y: t.clientY }));
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    const changed = Array.from(e.changedTouches);
+
+    // Tap: 1 dedo, sin arrastre significativo
+    if (e.touches.length === 0 && touchStartPos && changed.length === 1) {
+      const dx = changed[0].clientX - touchStartPos.x;
+      const dy = changed[0].clientY - touchStartPos.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 10) {
+        const nodo = hitTestTouch(changed[0].clientX, changed[0].clientY);
+        if (nodo) {
+          hoveredId = nodo.id;
+          if (!esConstelacion(nodo.id)) {
+            window.location.href = `/Objetos/Detalle/${nodo.id}`;
+          }
+          // Constelaciones: hoveredId queda seteado → dibujarTooltip lo muestra
+        }
+      }
+    }
+
+    lastTouches = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
+    if (e.touches.length === 0) { lastTouches = null; touchStartPos = null; }
+  }, { passive: false });
+
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
 
@@ -559,10 +655,13 @@
     const factor = e.deltaY < 0 ? 1.10 : 0.84;
     const newScale = Math.max(0.08, Math.min(5, scale * factor));
 
-    scale = newScale;
+    scale    = newScale;
+    targetScale = newScale;
 
     offset.x = mouseX - worldX * scale;
     offset.y = mouseY - worldY * scale;
+    targetOffset.x = offset.x;
+    targetOffset.y = offset.y;
 
   }, { passive: false });
 
@@ -575,61 +674,67 @@
     highlightedNames = Array.isArray(ruta) ? ruta : [];
   };
 
-  let simulacionLista = false;
+  // ── Botones de zoom ────────────────────────────────────────────────────────
+
+  function applyZoom(factor) {
+    const cx = canvas.width  / 2;
+    const cy = canvas.height / 2;
+    const worldX = (cx - offset.x) / scale;
+    const worldY = (cy - offset.y) / scale;
+    const newScale = Math.max(0.08, Math.min(5, scale * factor));
+    targetScale    = newScale;
+    targetOffset.x = cx - worldX * newScale;
+    targetOffset.y = cy - worldY * newScale;
+  }
+
+  function resetView() {
+    targetScale    = 1;
+    targetOffset.x = 0;
+    targetOffset.y = 0;
+  }
+
+  const btnZoomIn  = document.getElementById('grafo-btn-zoomin');
+  const btnZoomOut = document.getElementById('grafo-btn-zoomout');
+  const btnReset   = document.getElementById('grafo-btn-reset');
+
+  if (btnZoomIn)  btnZoomIn .addEventListener('click', () => applyZoom(1.35));
+  if (btnZoomOut) btnZoomOut.addEventListener('click', () => applyZoom(1 / 1.35));
+  if (btnReset)   btnReset  .addEventListener('click', resetView);
+
+  // Cuántos pasos de simulación por frame — menos en móvil
+  const PASOS_POR_FRAME = ('ontouchstart' in window) ? 1 : 2;
+  const TICKS_TOTAL     = ('ontouchstart' in window) ? 120 : 180;
+  const LERP_SNAP       = 0.001;
 
   function loop(tiempo) {
-    if (tick < 180) {
-      simularPaso();
-      tick++;
-      if (tick === 180) simulacionLista = true;
+    if (tick < TICKS_TOTAL) {
+      for (let p = 0; p < PASOS_POR_FRAME; p++) simularPaso();
+      tick += PASOS_POR_FRAME;
+      if (tick >= TICKS_TOTAL) tick = TICKS_TOTAL;
+    }
+
+    // Lerp suave hacia target; snap cuando está muy cerca
+    if (!dragging) {
+      const ds = targetScale    - scale;
+      const dx = targetOffset.x - offset.x;
+      const dy = targetOffset.y - offset.y;
+      if (Math.abs(ds) > LERP_SNAP) scale    += ds * 0.12;
+      else scale = targetScale;
+      if (Math.abs(dx) > LERP_SNAP) offset.x += dx * 0.12;
+      else offset.x = targetOffset.x;
+      if (Math.abs(dy) > LERP_SNAP) offset.y += dy * 0.12;
+      else offset.y = targetOffset.y;
     }
 
     dibujar(tiempo);
     requestAnimationFrame(loop);
   }
 
-  // ── Destacar nodo desde querystring (?destacar=<nombre>&via=<constelacion>) ──
-  function aplicarDestacarDesdeURL() {
-    const params = new URLSearchParams(location.search);
-    const destacar = params.get('destacar');
-    if (!destacar) return;
-    const via = params.get('via');
-
-    function intentar() {
-      if (!simulacionLista) {
-        requestAnimationFrame(intentar);
-        return;
-      }
-
-      const nodo = Object.values(nodos).find(n => n.nombre === destacar);
-      if (!nodo) {
-        const div = document.getElementById('resultado-ruta');
-        if (div) div.innerHTML = `<span class="text-danger">Nodo "${destacar}" no encontrado en el grafo.</span>`;
-        return;
-      }
-
-      // Centrar cámara en el nodo
-      offset.x = canvas.width / 2 - nodo.x * scale;
-      offset.y = canvas.height / 2 - nodo.y * scale;
-
-      // Resaltar (reusa lógica de aristas)
-      highlightedNames = via ? [destacar, via] : [destacar];
-
-      // Mensaje en panel de ruta
-      const div = document.getElementById('resultado-ruta');
-      if (div) {
-        div.innerHTML = via
-          ? `<strong>Destacando:</strong> ${destacar} &nbsp;↔&nbsp; <strong>${via}</strong> <span style="opacity:.6">(constelación)</span>`
-          : `<strong>Destacando:</strong> ${destacar}`;
-      }
-    }
-
-    intentar();
-  }
-
-  ajustarTamanio();
-  crearEstrellas();
-  inicializar();
-  loop(0);
-  aplicarDestacarDesdeURL();
+  // Esperar 1 frame para que CSS pinte el canvas antes de leer su tamaño
+  requestAnimationFrame(() => {
+    ajustarTamanio();
+    crearEstrellas();
+    inicializar();
+    loop(0);
+  });
 })();

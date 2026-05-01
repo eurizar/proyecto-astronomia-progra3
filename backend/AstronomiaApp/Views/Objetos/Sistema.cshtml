@@ -13,15 +13,6 @@
 </head>
 <body>
 
-    <!-- Botón volver al catálogo -->
-    <a asp-controller="Objetos" asp-action="Index"
-       style="position:fixed;top:1rem;left:1rem;z-index:9999;
-              color:#00d4ff;font-family:Orbitron,sans-serif;font-size:.75rem;
-              background:rgba(0,0,20,.7);padding:.4rem .8rem;border-radius:4px;
-              border:1px solid #00d4ff33;text-decoration:none;">
-        ← Catálogo
-    </a>
-
     <!-- Contenedor principal — recibe la API key via data attribute -->
     <div id="solar-canvas-container"
          data-api-key="@ViewData["ApiKey"]">
@@ -43,7 +34,8 @@
     </div>
 
     <div id="hud">
-        <div>
+        <div class="hud-left">
+            <a asp-controller="Objetos" asp-action="Index" class="hud-catalog">← Catálogo</a>
             <div class="hud-title">SISTEMA SOLAR EXPLORER</div>
             <div class="hud-coords" id="coords">SECTOR: BRAZO DE ORIÓN · DISTANCIA: 0 UA</div>
         </div>
@@ -85,6 +77,13 @@
     </div>
 
     <div class="mini-nav" id="mini-nav"></div>
+
+    <!-- Controles móviles: zoom + home -->
+    <div class="mobile-controls" id="mobile-controls">
+        <button class="mobile-btn" id="btn-zoom-in" title="Acercar">+</button>
+        <button class="mobile-btn mobile-btn-home" id="btn-home" title="Volver al sistema">⌂</button>
+        <button class="mobile-btn" id="btn-zoom-out" title="Alejar">−</button>
+    </div>
 
     <div class="speed-controls" id="speed-controls">
         <button class="speed-btn" data-speed="0" title="Pausa">⏸</button>
