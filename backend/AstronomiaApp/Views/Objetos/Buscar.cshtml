@@ -1,71 +1,396 @@
 @model AstronomiaApp.Models.ViewModels.BusquedaViewModel
 @{
-    ViewData["Title"] = $"Búsqueda: {Model.Termino}";
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Termino) ? "Buscar" : $"Búsqueda: {Model.Termino}";
 }
 
-<h2 class="text-warning mb-3">Resultados de búsqueda</h2>
+<style>
+    .buscar-wrap {
+        max-width: 700px;
+        margin: 2rem auto 0;
+    }
 
-<div class="mb-3">
-    <form asp-action="Buscar" method="get" class="d-flex gap-2">
-        <input name="nombre" value="@Model.Termino"
-               class="form-control bg-secondary text-light border-0"
-               placeholder="Nombre del objeto..." />
-        <button type="submit" class="btn btn-warning">Buscar</button>
+    .buscar-titulo {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #f3c87c;
+        margin-bottom: 1.2rem;
+        letter-spacing: .02em;
+    }
+
+    /* ── Campo con autocomplete ── */
+    .buscar-input-wrap {
+        position: relative;
+    }
+
+    .buscar-input {
+        width: 100%;
+        padding: .75rem 1rem;
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 8px;
+        color: #f3ead4;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color .2s;
+    }
+    .buscar-input:focus { border-color: rgba(212,166,87,.6); }
+
+    .buscar-btn {
+        margin-top: .6rem;
+        padding: .6rem 1.6rem;
+        background: #d4a657;
+        border: none;
+        border-radius: 6px;
+        color: #060812;
+        font-weight: 700;
+        font-size: .9rem;
+        cursor: pointer;
+        transition: background .2s;
+    }
+    .buscar-btn:hover { background: #f3c87c; }
+
+    /* ── Dropdown autocomplete ── */
+    .ac-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0; right: 0;
+        background: #0d1220;
+        border: 1px solid rgba(212,166,87,.25);
+        border-radius: 8px;
+        z-index: 999;
+        max-height: 280px;
+        overflow-y: auto;
+        box-shadow: 0 8px 30px rgba(0,0,0,.5);
+    }
+    .ac-dropdown.open { display: block; }
+    .ac-item {
+        padding: .6rem 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        transition: background .15s;
+        border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.active { background: rgba(212,166,87,.1); }
+    .ac-nombre { color: #f3ead4; font-size: .92rem; }
+    .ac-tipo {
+        font-size: .72rem;
+        color: #a39b85;
+        background: rgba(255,255,255,.06);
+        padding: 2px 7px;
+        border-radius: 20px;
+        margin-left: auto;
+    }
+    .ac-empty {
+        padding: .8rem 1rem;
+        color: #6a6657;
+        font-size: .85rem;
+        text-align: center;
+    }
+
+    /* ── Resultados ── */
+    .resultados-header {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        margin: 1.5rem 0 1rem;
+        flex-wrap: wrap;
+    }
+    .badge-exacta { background: #16a34a; color: #fff; padding: 3px 10px; border-radius: 20px; font-size: .72rem; }
+    .badge-parcial { background: rgba(255,255,255,.1); color: #a39b85; padding: 3px 10px; border-radius: 20px; font-size: .72rem; }
+    .res-count { color: #6a6657; font-size: .85rem; }
+    .res-count strong { color: #f3ead4; }
+
+    .obj-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: .5rem;
+    }
+    .obj-card {
+        background: rgba(255,255,255,.04);
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 10px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+        transition: border-color .2s, background .2s;
+    }
+    .obj-card:hover { border-color: rgba(212,166,87,.35); background: rgba(212,166,87,.04); }
+    .obj-nombre { color: #f3c87c; font-weight: 600; font-size: .95rem; }
+    .obj-tipo { font-size: .72rem; color: #7eb6cd; background: rgba(126,182,205,.1); padding: 2px 8px; border-radius: 20px; width: fit-content; }
+    .obj-meta { font-size: .78rem; color: #6a6657; margin-top: .2rem; }
+    .obj-link {
+        margin-top: auto;
+        padding: .4rem .9rem;
+        border: 1px solid rgba(212,166,87,.4);
+        border-radius: 6px;
+        color: #d4a657;
+        font-size: .78rem;
+        text-decoration: none;
+        text-align: center;
+        transition: background .2s;
+    }
+    .obj-link:hover { background: rgba(212,166,87,.12); color: #f3c87c; }
+
+    .no-results {
+        padding: 1.2rem;
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 8px;
+        color: #6a6657;
+        font-size: .9rem;
+        margin-top: 1rem;
+    }
+
+    /* ── Sugerencias / datos interesantes ── */
+    .sugerencias {
+        margin-top: 2.5rem;
+    }
+    .sug-titulo {
+        font-size: .72rem;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: #6a6657;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+    }
+    .sug-titulo::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(255,255,255,.06);
+    }
+    .sug-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: .75rem;
+    }
+    .sug-card {
+        background: rgba(255,255,255,.03);
+        border: 1px solid rgba(255,255,255,.07);
+        border-radius: 10px;
+        padding: .85rem 1rem;
+        cursor: pointer;
+        transition: border-color .2s, background .2s;
+    }
+    .sug-card:hover { border-color: rgba(212,166,87,.3); background: rgba(212,166,87,.04); }
+    .sug-icon { width: 32px; height: 32px; color: #d4a657; margin-bottom: .35rem; }
+    .sug-icon svg { width: 100%; height: 100%; }
+    .sug-nombre { color: #f3ead4; font-size: .88rem; font-weight: 600; margin-bottom: .2rem; }
+    .sug-dato { font-size: .75rem; color: #6a6657; line-height: 1.5; }
+    .sug-tag { display: inline-block; font-size: .65rem; color: #d4a657; background: rgba(212,166,87,.08); padding: 2px 7px; border-radius: 20px; margin-top: .4rem; }
+</style>
+
+<div class="buscar-wrap">
+    <div class="buscar-titulo">🔭 Buscar objeto astronómico</div>
+
+    <form asp-action="Buscar" method="get" id="buscar-form" autocomplete="off">
+        <div class="buscar-input-wrap">
+            <input id="buscar-input" name="nombre" value="@Model.Termino"
+                   class="buscar-input"
+                   placeholder="Ej: Marte, Andrómeda, Halley…" />
+            <div class="ac-dropdown" id="ac-dropdown"></div>
+        </div>
+        <button type="submit" class="buscar-btn">Buscar</button>
     </form>
-</div>
 
-@if (!string.IsNullOrWhiteSpace(Model.Termino))
-{
-    <div class="mb-2">
-        @if (Model.BusquedaExacta)
+    @* ── Resultados ── *@
+    @if (!string.IsNullOrWhiteSpace(Model.Termino))
+    {
+        <div class="resultados-header">
+            @if (Model.BusquedaExacta)
+            {
+                <span class="badge-exacta">Coincidencia exacta</span>
+            }
+            else
+            {
+                <span class="badge-parcial">Búsqueda parcial</span>
+            }
+            <span class="res-count">@Model.TotalEncontrados resultado(s) para <strong>"@Model.Termino"</strong></span>
+        </div>
+
+        @if (!Model.Resultados.Any())
         {
-            <span class="badge bg-success">Coincidencia exacta (tabla hash)</span>
+            <div class="no-results">No se encontraron objetos para "<strong>@Model.Termino</strong>".</div>
         }
         else
         {
-            <span class="badge bg-secondary">Búsqueda parcial en lista enlazada</span>
-        }
-        <span class="ms-2 text-muted small">@Model.TotalEncontrados resultado(s) para "<strong class="text-light">@Model.Termino</strong>"</span>
-    </div>
-
-    @if (!Model.Resultados.Any())
-    {
-        <div class="alert alert-dark border border-secondary">
-            No se encontraron objetos que coincidan con "<strong>@Model.Termino</strong>".
-        </div>
-    }
-    else
-    {
-        <div class="row row-cols-1 row-cols-md-3 g-3">
-            @foreach (var obj in Model.Resultados)
-            {
-                <div class="col">
-                    <div class="card bg-secondary border-0 h-100">
-                        <div class="card-body">
-                            <h5 class="card-title text-warning">@obj.Nombre</h5>
-                            <span class="badge bg-info text-dark mb-2">@obj.Tipo</span>
-                            <p class="card-text text-muted small">
-                                @if (obj.RadioKm.HasValue)
-                                {
-                                    <span>Radio: @obj.RadioKm.Value.ToString("N0") km</span><br />
-                                }
-                                @if (obj.DistanciaTierraAl.HasValue)
-                                {
-                                    <span>Distancia: @obj.DistanciaTierraAl.Value.ToString("N4") UA</span><br />
-                                }
-                                @if (!string.IsNullOrEmpty(obj.Sistema))
-                                {
-                                    <span>Sistema: @obj.Sistema</span>
-                                }
-                            </p>
+            <div class="obj-grid">
+                @foreach (var obj in Model.Resultados)
+                {
+                    <div class="obj-card">
+                        <div class="obj-nombre">@obj.Nombre</div>
+                        <div class="obj-tipo">@obj.Tipo</div>
+                        <div class="obj-meta">
+                            @if (obj.RadioKm.HasValue)
+                            {
+                                <div>Radio: @obj.RadioKm.Value.ToString("N0") km</div>
+                            }
+                            @if (obj.DistanciaTierraAl.HasValue)
+                            {
+                                <div>Dist: @obj.DistanciaTierraAl.Value.ToString("N4") UA</div>
+                            }
+                            @if (!string.IsNullOrEmpty(obj.Sistema))
+                            {
+                                <div>Sistema: @obj.Sistema</div>
+                            }
                         </div>
-                        <div class="card-footer bg-transparent border-0">
-                            <a asp-action="Detalle" asp-route-id="@obj.Id"
-                               class="btn btn-sm btn-outline-warning">Ver detalle</a>
-                        </div>
+                        <a asp-action="Detalle" asp-route-id="@obj.Id" class="obj-link">Ver detalle →</a>
                     </div>
-                </div>
-            }
-        </div>
+                }
+            </div>
+        }
     }
+
+    @* ── Sugerencias / datos interesantes ── *@
+    <div class="sugerencias" id="sugerencias-section" style="@(!string.IsNullOrWhiteSpace(Model.Termino) && Model.Resultados.Any() ? "display:none" : "")">
+        <div class="sug-titulo">Datos interesantes · explorar</div>
+        <div class="sug-grid" id="sug-grid">
+            <div class="sug-card" style="opacity:.4;pointer-events:none">
+                <div class="sug-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                <div class="sug-nombre">Cargando…</div>
+                <div class="sug-dato">Obteniendo objetos de la base de datos.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const input    = document.getElementById('buscar-input');
+    const dropdown = document.getElementById('ac-dropdown');
+    let debounce, activeIdx = -1, items = [];
+
+    function render(data) {
+        items = data;
+        activeIdx = -1;
+        if (!data.length) {
+            dropdown.innerHTML = '<div class="ac-empty">Sin resultados</div>';
+        } else {
+            dropdown.innerHTML = data.map((d, i) =>
+                `<div class="ac-item" data-i="${i}" data-nombre="${d.nombre}">
+                    <span class="ac-nombre">${d.nombre}</span>
+                    <span class="ac-tipo">${d.tipo || ''}</span>
+                </div>`
+            ).join('');
+            dropdown.querySelectorAll('.ac-item').forEach(el => {
+                el.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    input.value = el.dataset.nombre;
+                    close();
+                    document.getElementById('buscar-form').submit();
+                });
+            });
+        }
+        dropdown.classList.add('open');
+    }
+
+    function close() { dropdown.classList.remove('open'); activeIdx = -1; }
+
+    function navigate(dir) {
+        const els = dropdown.querySelectorAll('.ac-item');
+        if (!els.length) return;
+        if (activeIdx >= 0) els[activeIdx].classList.remove('active');
+        activeIdx = Math.max(0, Math.min(els.length - 1, activeIdx + dir));
+        els[activeIdx].classList.add('active');
+        els[activeIdx].scrollIntoView({ block: 'nearest' });
+    }
+
+    input.addEventListener('input', () => {
+        const q = input.value.trim();
+        clearTimeout(debounce);
+        if (q.length < 2) { close(); return; }
+        debounce = setTimeout(async () => {
+            try {
+                const r = await fetch(`/api/objetos/buscar?nombre=${encodeURIComponent(q)}`);
+                if (!r.ok) return;
+                const d = await r.json();
+                render(d.items.slice(0, 8));
+            } catch {}
+        }, 220);
+    });
+
+    input.addEventListener('keydown', e => {
+        if (!dropdown.classList.contains('open')) return;
+        if (e.key === 'ArrowDown')  { e.preventDefault(); navigate(1); }
+        if (e.key === 'ArrowUp')    { e.preventDefault(); navigate(-1); }
+        if (e.key === 'Enter' && activeIdx >= 0) {
+            e.preventDefault();
+            input.value = items[activeIdx].nombre;
+            close();
+            document.getElementById('buscar-form').submit();
+        }
+        if (e.key === 'Escape') close();
+    });
+
+    document.addEventListener('click', e => {
+        if (!e.target.closest('.buscar-input-wrap')) close();
+    });
+
+    input.addEventListener('focus', () => {
+        if (input.value.trim().length >= 2) input.dispatchEvent(new Event('input'));
+    });
+})();
+
+function buscarTermino(nombre) {
+    document.getElementById('buscar-input').value = nombre;
+    document.getElementById('buscar-form').submit();
 }
+
+// ── Sugerencias desde API ──────────────────────────────────────────────────
+(async function cargarSugerencias() {
+    const grid = document.getElementById('sug-grid');
+    if (!grid) return;
+
+    const ICONS = {
+        'Estrella': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
+        'Planeta': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(-20 12 12)"/></svg>`,
+        'Cometa': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><line x1="10.5" y1="10.5" x2="20" y2="20"/><line x1="11" y1="8" x2="22" y2="6"/><line x1="8" y1="11" x2="6" y2="22"/></svg>`,
+        'Asteroide': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L16 7 L21 8 L17 13 L18 19 L12 16 L6 19 L7 13 L3 8 L8 7 Z"/></svg>`,
+        'Galaxia': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12 Q18 6 20 12 Q18 18 12 12 Q6 18 4 12 Q6 6 12 12"/><circle cx="12" cy="12" r="1.5"/></svg>`,
+        'Satélite': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg>`,
+        'Satelite': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg>`,
+        'Planeta Enano': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="9" ry="3" stroke-dasharray="2 2"/></svg>`,
+        'Exoplaneta': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M2 12 Q7 6 12 12 Q17 18 22 12"/></svg>`,
+        'Constelación': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="6" cy="19" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="18" r="1.5" fill="currentColor" stroke="none"/><line x1="5" y1="5" x2="19" y2="8"/><line x1="19" y1="8" x2="12" y2="14"/><line x1="12" y1="14" x2="6" y2="19"/><line x1="12" y1="14" x2="18" y2="18"/></svg>`,
+        'Constelacion': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="6" cy="19" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="18" r="1.5" fill="currentColor" stroke="none"/><line x1="5" y1="5" x2="19" y2="8"/><line x1="19" y1="8" x2="12" y2="14"/><line x1="12" y1="14" x2="6" y2="19"/><line x1="12" y1="14" x2="18" y2="18"/></svg>`,
+        'default': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
+    };
+
+    function datoInteresante(obj) {
+        const partes = [];
+        if (obj.radio)             partes.push(`Radio: ${Number(obj.radio).toLocaleString('es')} km`);
+        if (obj.distanciaTierraAl) partes.push(`Dist. Tierra: ${Number(obj.distanciaTierraAl).toFixed(3)} UA`);
+        if (obj.temperatura)       partes.push(`Temp: ${Number(obj.temperatura).toLocaleString('es')} K`);
+        if (obj.masa)              partes.push(`Masa: ${Number(obj.masa).toExponential(2)} kg`);
+        return partes.slice(0, 2).join(' · ') || 'Sin datos adicionales registrados.';
+    }
+
+    try {
+        // Trae 12 objetos aleatorios mezclando tipos
+        const r = await fetch('/api/objetos?limit=50');
+        if (!r.ok) return;
+        const d = await r.json();
+
+        // Barajar y tomar 6
+        const shuffled = d.items.sort(() => Math.random() - 0.5).slice(0, 6);
+
+        grid.innerHTML = shuffled.map(obj => `
+            <div class="sug-card" onclick="buscarTermino('${obj.nombre.replace(/'/g, "\\'")}')">
+                <div class="sug-icon">${ICONS[obj.tipo] || ICONS['default']}</div>
+                <div class="sug-nombre">${obj.nombre}</div>
+                <div class="sug-dato">${datoInteresante(obj)}</div>
+                <span class="sug-tag">${obj.tipo || 'Objeto'}</span>
+            </div>
+        `).join('');
+    } catch {
+        grid.innerHTML = '';
+    }
+})();
+</script>

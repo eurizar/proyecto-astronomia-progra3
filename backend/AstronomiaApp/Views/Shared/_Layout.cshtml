@@ -1,3 +1,13 @@
+@using AstronomiaApp.Services
+@inject HistorialService Historial
+@{
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var act  = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string Nav(string c, string a) =>
+        (ctrl == c && act == a)
+            ? "nav-link text-warning fw-semibold border-bottom border-warning pb-0"
+            : "nav-link text-secondary";
+}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -22,23 +32,43 @@
                 <div class="navbar-collapse collapse">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Objetos" asp-action="Index">Catálogo</a>
+                            <a class="@Nav("Objetos","Index")" asp-controller="Objetos" asp-action="Index">Catálogo</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Objetos" asp-action="Buscar">Buscar</a>
+                            <a class="@Nav("Objetos","Buscar")" asp-controller="Objetos" asp-action="Buscar">Buscar</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Grafo" asp-action="Index">Grafo</a>
+                            <a class="@Nav("Objetos","BuscarRango")" asp-controller="Objetos" asp-action="BuscarRango">Explorar</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Objetos" asp-action="Sistema">Sistema 3D</a>
+                            <a class="@Nav("Grafo","Index")" asp-controller="Grafo" asp-action="Index">Grafo</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Objetos","Sistema")" asp-controller="Objetos" asp-action="Sistema">Sistema 3D</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Admin","Consultas")" asp-controller="Admin" asp-action="Consultas">Bitácora</a>
                         </li>
                     </ul>
-                    <form class="d-flex" asp-controller="Objetos" asp-action="Buscar" method="get">
-                        <input class="form-control form-control-sm me-2 bg-secondary text-light border-0"
-                               type="search" name="nombre" placeholder="Buscar objeto..." />
-                        <button class="btn btn-sm btn-warning" type="submit">Ir</button>
-                    </form>
+                    @{
+                        var historial = Historial.ObtenerHistorial().ToList();
+                    }
+                    @if (historial.Any())
+                    {
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-secondary" href="#" data-bs-toggle="dropdown">
+                                    Visitados (@historial.Count)
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+                                    @foreach (var e in historial)
+                                    {
+                                        <li><a class="dropdown-item small" href="@e.Url">@e.Nombre</a></li>
+                                    }
+                                </ul>
+                            </li>
+                        </ul>
+                    }
                 </div>
             </div>
         </nav>

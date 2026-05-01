@@ -60,6 +60,27 @@ canvas {
 
 #hud > * { pointer-events: all; }
 
+.hud-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hud-catalog {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    color: rgba(0,212,255,0.7);
+    text-decoration: none;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    transition: color 0.2s;
+    width: fit-content;
+}
+
+.hud-catalog:hover {
+    color: #00d4ff;
+}
+
 .hud-title {
     font-family: 'Orbitron', sans-serif;
     font-size: 1.1rem;
@@ -1069,25 +1090,125 @@ canvas {
 .dest-info::-webkit-scrollbar { width: 3px; }
 .dest-info::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 
+/* ── Mobile controls (zoom + home) ───────────────────────────────────────── */
+
+.mobile-controls {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: fixed;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 300;
+    }
+
+    .mobile-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 1px solid rgba(0,212,255,0.4);
+        background: rgba(0,10,30,0.75);
+        color: #00d4ff;
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        transition: background 0.2s, box-shadow 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-btn:active {
+        background: rgba(0,212,255,0.2);
+        box-shadow: 0 0 16px rgba(0,212,255,0.4);
+    }
+
+    .mobile-btn-home {
+        border-color: rgba(255,180,50,0.5);
+        color: #ffbb44;
+        font-size: 1.2rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s, background 0.2s, box-shadow 0.2s;
+    }
+
+    .mobile-btn-home.visible {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .mobile-btn-home:active {
+        background: rgba(255,180,50,0.2);
+        box-shadow: 0 0 16px rgba(255,180,50,0.4);
+    }
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-    .detail-container { flex-direction: column; gap: 30px; padding: 20px; }
-    .detail-info h1   { font-size: 1.8rem; }
+    /* HUD */
+    #hud { padding: 10px 14px; }
+    .hud-title { font-size: 0.75rem; letter-spacing: 1px; }
+    .hud-coords { font-size: 0.6rem; }
+    .hud-catalog { font-size: 0.6rem; margin-bottom: 2px; }
+    .hud-back { font-size: 0.65rem; padding: 6px 12px; }
+
+    /* Planet detail panel */
+    #planet-detail { align-items: flex-start; padding-top: 60px; overflow-y: auto; }
+    .detail-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 16px 16px 40px;
+        width: 100%;
+        max-width: 100%;
+    }
+    .detail-planet { align-self: center; }
+    .detail-info {
+        min-width: 0;
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+    .detail-info h1   { font-size: 1.6rem; }
+    .detail-info .description { font-size: 0.88rem; }
     .stats-grid       { grid-template-columns: 1fr 1fr; }
+
+    /* Mini nav */
     .mini-nav         { gap: 8px; padding: 10px 15px; }
     .mini-planet-btn  { width: 28px; height: 28px; }
-    .view-controls    { bottom: 20px; left: 10px; }
+
+    /* View controls — desplazar a la izquierda para no solapar botones móvil */
+    .view-controls    { bottom: 20px; left: 10px; right: auto; }
     .view-btn .view-label { display: none; }
     .view-btn { padding: 8px 10px; }
+
+    /* Speed controls */
+    .speed-controls { bottom: 20px; }
+
+    /* Nav panel */
     .nav-panel { width: 100%; right: -100%; }
     .nav-toggle-label { display: none; }
+
+    /* Dest detail */
     .dest-detail-container { flex-direction: column; gap: 25px; padding: 20px; }
-    .dest-visual canvas { width: 300px; height: 300px; }
+    .dest-visual canvas { width: 280px; height: 280px; }
 }
 
 @media (max-width: 480px) {
-    .stats-grid       { grid-template-columns: 1fr; }
-    .hud-title        { font-size: 0.8rem; }
-    .api-badge        { display: none; }
+    .stats-grid  { grid-template-columns: 1fr; }
+    .hud-title   { font-size: 0.7rem; }
+    .api-badge   { display: none; }
+    .detail-info h1 { font-size: 1.3rem; }
+    .stat-card .stat-value { font-size: 1.2rem; }
 }
