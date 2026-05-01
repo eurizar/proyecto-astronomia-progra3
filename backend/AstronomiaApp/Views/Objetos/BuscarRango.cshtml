@@ -1,0 +1,545 @@
+@model AstronomiaApp.Models.ViewModels.BusquedaRangoViewModel
+@{
+    ViewData["Title"] = "Búsqueda por Rango";
+
+    string FormatVal(double? v, string campo) {
+        if (!v.HasValue) return "—";
+        return campo.ToLower() switch {
+            "masa"        => v.Value.ToString("E2"),
+            "distancia"   => v.Value.ToString("N4") + " UA",
+            "radio"       => v.Value.ToString("N0") + " km",
+            "temperatura" => v.Value.ToString("N0") + " K",
+            _             => v.Value.ToString("N4")
+        };
+    }
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=JetBrains+Mono:wght@@300;400;500;600&display=swap');
+
+    .rango-page {
+        --cosmos-0:   #060812;
+        --cream:      #f3ead4;
+        --cream-2:    #d4cbb0;
+        --cream-3:    #a39b85;
+        --muted:      #6a6657;
+        --gold:       #d4a657;
+        --gold-bright:#f3c87c;
+        --gold-deep:  #a07d35;
+        --cyan:       #7eb6cd;
+        --line:       #2a3346;
+
+        color: var(--cream);
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        padding: 2rem 0 4rem;
+        max-width: 860px;
+        margin: 0 auto;
+    }
+
+    body.bg-dark { background: #060812 !important; }
+
+    /* ── Header ─────────────────────────────────────────────────────── */
+    .rango-meta {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .75rem;
+        color: var(--cream-3);
+        letter-spacing: .22em;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+        display: flex; gap: 1rem; align-items: center;
+    }
+    .rango-meta-sep { color: var(--gold); }
+
+    .rango-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 3.2rem;
+        font-weight: 500;
+        font-style: italic;
+        line-height: .95;
+        color: var(--cream);
+        letter-spacing: -.02em;
+        margin: 0 0 .4rem;
+    }
+
+    .rango-subtitle {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .72rem;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 2rem;
+    }
+
+    .rango-divider {
+        height: 1px;
+        background: linear-gradient(to right, transparent, var(--line) 15%, var(--gold-deep) 50%, var(--line) 85%, transparent);
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    .rango-divider::after {
+        content: '∿';
+        position: absolute; left: 50%; top: 50%;
+        transform: translate(-50%,-50%);
+        background: var(--cosmos-0);
+        padding: 0 1.25rem;
+        color: var(--gold); font-size: 1rem;
+    }
+
+    /* ── Formulario ──────────────────────────────────────────────────── */
+    .rango-form {
+        background: rgba(17,21,31,.85);
+        border: 1px solid var(--line);
+        padding: 1.75rem 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .rango-form-title {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .72rem;
+        letter-spacing: .22em;
+        text-transform: uppercase;
+        color: var(--gold);
+        font-weight: 500;
+        margin-bottom: 1.25rem;
+        display: flex; align-items: center; gap: .75rem;
+    }
+    .rango-form-title::after {
+        content: ''; flex: 1; height: 1px;
+        background: linear-gradient(to right, var(--gold-deep), transparent);
+    }
+
+    .rango-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 1fr auto;
+        gap: .75rem;
+        align-items: end;
+    }
+
+    .rango-field { display: flex; flex-direction: column; gap: .4rem; }
+
+    .rango-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        color: var(--cream-3);
+        font-weight: 500;
+    }
+
+    .rango-select, .rango-input {
+        background: rgba(6,8,18,.85);
+        border: 1px solid var(--line);
+        color: var(--cream);
+        padding: .65rem .9rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .82rem;
+        transition: border-color .18s;
+        width: 100%;
+    }
+
+    .rango-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23d4a657' stroke-width='1.8'><polyline points='6 9 12 15 18 9'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right .75rem center;
+        background-size: 14px;
+        padding-right: 2.2rem;
+        cursor: pointer;
+    }
+
+    .rango-select:focus, .rango-input:focus {
+        outline: none;
+        border-color: var(--gold);
+        background-color: rgba(212,166,87,.04);
+    }
+
+    .rango-select option { background: var(--cosmos-0); color: var(--cream); }
+
+    .rango-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .5rem;
+        padding: .68rem 1.4rem;
+        background: var(--gold);
+        border: 1px solid var(--gold);
+        color: var(--cosmos-0);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .72rem;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .18s;
+        white-space: nowrap;
+        height: fit-content;
+    }
+    .rango-btn:hover { background: var(--gold-bright); border-color: var(--gold-bright); }
+
+    .rango-hint {
+        margin-top: 1rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .1em;
+        color: var(--muted);
+        display: flex; flex-wrap: wrap; gap: 1rem;
+    }
+    .rango-hint-example {
+        cursor: pointer;
+        color: var(--cream-3);
+        border-bottom: 1px dashed var(--muted);
+        transition: color .15s;
+    }
+    .rango-hint-example:hover { color: var(--gold); border-color: var(--gold); }
+
+    /* ── Resultados ──────────────────────────────────────────────────── */
+    .rango-results-head {
+        display: flex; align-items: center; gap: 1rem;
+        margin-bottom: 1rem;
+        padding-bottom: .85rem;
+        border-bottom: 1px solid var(--gold-deep);
+    }
+
+    .rango-results-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .72rem;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        color: var(--cream-2);
+        font-weight: 500;
+        flex: 1;
+    }
+
+    .rango-badge {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .12em;
+        padding: .2rem .7rem;
+        background: rgba(212,166,87,.12);
+        border: 1px solid rgba(212,166,87,.35);
+        color: var(--gold-bright);
+    }
+
+    .rango-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 1rem;
+    }
+    .rango-table thead tr {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .7rem;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: var(--cream-2);
+        background: rgba(212,166,87,.04);
+        border-top: 1px solid var(--line);
+    }
+    .rango-table thead th {
+        padding: .7rem .9rem;
+        font-weight: 500;
+        border-bottom: 1px solid var(--line);
+    }
+    .rango-table tbody tr {
+        border-bottom: 1px dashed rgba(42,51,70,.6);
+        transition: background .15s;
+    }
+    .rango-table tbody tr:hover { background: rgba(212,166,87,.04); }
+    .rango-table tbody td { padding: .65rem .9rem; vertical-align: middle; }
+
+    .td-nombre {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.3rem;
+        font-style: italic;
+        font-weight: 500;
+        color: var(--cream);
+    }
+    .td-tipo {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--cyan);
+        border: 1px solid rgba(126,182,205,.4);
+        background: rgba(126,182,205,.08);
+        padding: .2rem .55rem;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .td-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .85rem;
+        color: var(--gold-bright);
+        font-feature-settings: 'tnum';
+        text-align: right;
+    }
+    .td-val.empty { color: var(--muted); }
+    .td-action a {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: var(--gold);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: .3rem .7rem;
+        transition: border-color .15s, color .15s;
+        white-space: nowrap;
+    }
+    .td-action a:hover { border-color: var(--gold); color: var(--gold-bright); }
+
+    .rango-empty {
+        padding: 3rem 1.5rem;
+        text-align: center;
+        border: 1px dashed var(--line);
+        margin-top: .5rem;
+    }
+    .rango-empty p {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .72rem;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0;
+    }
+
+    .avl-badge {
+        display: inline-flex; align-items: center; gap: .4rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .65rem; letter-spacing: .12em; text-transform: uppercase;
+        color: #7dcc8a;
+        border: 1px solid rgba(125,204,138,.35);
+        background: rgba(125,204,138,.07);
+        padding: .2rem .65rem;
+    }
+
+    /* ── Paginación ──────────────────────────────────────────────────── */
+    .rango-pager {
+        margin-top: 2.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    .rango-pager-meta {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .75rem;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: var(--cream-2);
+    }
+    .rango-pager-meta strong { color: var(--gold-bright); font-weight: 500; }
+    .rango-pager-controls { display: flex; align-items: center; gap: .25rem; }
+
+    .pgr-btn, .pgr-page {
+        min-width: 40px; height: 40px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .85rem;
+        border: 1px solid var(--line);
+        background: rgba(17,21,31,.9);
+        color: var(--cream);
+        text-decoration: none;
+        transition: border-color .18s, color .18s, background .18s;
+        font-weight: 500;
+    }
+    .pgr-btn:hover, .pgr-page:hover {
+        border-color: var(--gold); color: var(--gold);
+        background: rgba(212,166,87,.08);
+    }
+    .pgr-page.current {
+        background: var(--gold); color: var(--cosmos-0);
+        border-color: var(--gold); font-weight: 600;
+    }
+    .pgr-btn.disabled { opacity: .2; pointer-events: none; }
+    .pgr-ellipsis {
+        padding: 0 .3rem;
+        color: var(--muted);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .8rem;
+    }
+
+    @@media (max-width: 700px) {
+        .rango-grid { grid-template-columns: 1fr 1fr; }
+        .rango-btn { grid-column: span 2; }
+    }
+</style>
+
+<section class="rango-page">
+
+    <div class="rango-meta">
+        <span>Búsqueda</span>
+        <span class="rango-meta-sep">·</span>
+        <span>Árbol AVL</span>
+        <span class="rango-meta-sep">·</span>
+        <span>O(log n + k)</span>
+    </div>
+
+    <h1 class="rango-title">Por Rango</h1>
+    <div class="rango-subtitle">Filtra objetos astronómicos entre dos valores numéricos usando el árbol AVL</div>
+    <div class="rango-divider"></div>
+
+    @* ── Formulario ─────────────────────────────────────────────────── *@
+    <form method="get" asp-action="BuscarRango" class="rango-form">
+        <div class="rango-form-title">Parámetros de búsqueda</div>
+        @{
+            var campoOpts = new[] {
+                ("distancia",   "Distancia (UA)"),
+                ("masa",        "Masa (kg)"),
+                ("radio",       "Radio (km)"),
+                ("temperatura", "Temperatura (K)")
+            };
+            var optsHtml = string.Join("", campoOpts.Select(o =>
+                $"<option value=\"{o.Item1}\"{(Model.Campo == o.Item1 ? " selected" : "")}>{o.Item2}</option>"));
+        }
+        <div class="rango-grid">
+            <div class="rango-field">
+                <label class="rango-label" for="campo">Campo</label>
+                <select id="campo" name="campo" class="rango-select">
+                    @Html.Raw(optsHtml)
+                </select>
+            </div>
+            <div class="rango-field">
+                <label class="rango-label" for="min">Mínimo</label>
+                <input id="min" name="min" type="number" step="any"
+                       class="rango-input" value="@Model.Min" placeholder="0" />
+            </div>
+            <div class="rango-field">
+                <label class="rango-label" for="max">Máximo</label>
+                <input id="max" name="max" type="number" step="any"
+                       class="rango-input" value="@Model.Max" placeholder="100" />
+            </div>
+            <button type="submit" class="rango-btn">Buscar →</button>
+        </div>
+
+        <div class="rango-hint">
+            <span>Ejemplos rápidos:</span>
+            <span class="rango-hint-example" onclick="setRango('distancia',0,5.5)">Planetas interiores (0–5.5 UA)</span>
+            <span class="rango-hint-example" onclick="setRango('distancia',5,35)">Planetas exteriores (5–35 UA)</span>
+            <span class="rango-hint-example" onclick="setRango('radio',1000,80000)">Radio intermedio (1000–80000 km)</span>
+            <span class="rango-hint-example" onclick="setRango('temperatura',200,400)">Zona habitable (200–400 K)</span>
+        </div>
+    </form>
+
+    @* ── Resultados ─────────────────────────────────────────────────── *@
+    @if (Model.BusquedaRealizada)
+    {
+        <div class="rango-results-head">
+            <span class="rango-results-label">
+                @Model.CampoLabel entre @Model.Min?.ToString("G6") y @Model.Max?.ToString("G6")
+            </span>
+            <span class="rango-badge">@Model.TotalEncontrados objetos</span>
+            <span class="avl-badge">AVL O(log n)</span>
+        </div>
+
+        @if (!Model.Resultados.Any())
+        {
+            <div class="rango-empty">
+                <p>Sin objetos en ese rango — intenta valores más amplios</p>
+            </div>
+        }
+        else
+        {
+            <table class="rango-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th style="text-align:right">@Model.CampoLabel</th>
+                        <th style="text-align:right">Radio (km)</th>
+                        <th style="text-align:right">Dist. UA</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var obj in Model.Resultados)
+                    {
+                        double? valorCampo = Model.Campo.ToLower() switch {
+                            "masa"        => obj.MasaKg,
+                            "radio"       => obj.RadioKm,
+                            "temperatura" => obj.TemperaturaK,
+                            _             => obj.DistanciaTierraAl
+                        };
+                        <tr>
+                            <td class="td-nombre">@obj.Nombre</td>
+                            <td><span class="td-tipo">@obj.Tipo</span></td>
+                            <td class="td-val @(!valorCampo.HasValue ? "empty" : "")">
+                                @FormatVal(valorCampo, Model.Campo)
+                            </td>
+                            <td class="td-val @(!obj.RadioKm.HasValue ? "empty" : "")">
+                                @(obj.RadioKm.HasValue ? obj.RadioKm.Value.ToString("N0") : "—")
+                            </td>
+                            <td class="td-val @(!obj.DistanciaTierraAl.HasValue ? "empty" : "")">
+                                @(obj.DistanciaTierraAl.HasValue ? obj.DistanciaTierraAl.Value.ToString("N4") : "—")
+                            </td>
+                            <td class="td-action">
+                                <a asp-action="Detalle" asp-route-id="@obj.Id">Ver →</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+
+    @* ── Paginación ──────────────────────────────────────────────────── *@
+    @if (Model.BusquedaRealizada && Model.TotalPaginas > 1)
+    {
+        var pageSet = new SortedSet<int> { 1, Model.TotalPaginas };
+        for (int p = Model.PaginaActual - 2; p <= Model.PaginaActual + 2; p++)
+            if (p >= 1 && p <= Model.TotalPaginas) pageSet.Add(p);
+        var pages = pageSet.ToList();
+
+        <nav class="rango-pager" aria-label="Paginación">
+            <span class="rango-pager-meta">
+                Página <strong>@Model.PaginaActual</strong> de <strong>@Model.TotalPaginas</strong>
+                &nbsp;·&nbsp; <strong>@Model.TotalEncontrados</strong> objetos
+            </span>
+            <div class="rango-pager-controls">
+                <a class="pgr-btn @(Model.PaginaActual == 1 ? "disabled" : "")"
+                   asp-action="BuscarRango"
+                   asp-route-campo="@Model.Campo"
+                   asp-route-min="@Model.Min"
+                   asp-route-max="@Model.Max"
+                   asp-route-pagina="@(Model.PaginaActual - 1)">«</a>
+
+                @{ int? last = null; }
+                @foreach (var p in pages)
+                {
+                    if (last.HasValue && p - last.Value > 1)
+                    {
+                        <span class="pgr-ellipsis">…</span>
+                    }
+                    <a class="pgr-page @(p == Model.PaginaActual ? "current" : "")"
+                       asp-action="BuscarRango"
+                       asp-route-campo="@Model.Campo"
+                       asp-route-min="@Model.Min"
+                       asp-route-max="@Model.Max"
+                       asp-route-pagina="@p">@p</a>
+                    last = p;
+                }
+
+                <a class="pgr-btn @(Model.PaginaActual == Model.TotalPaginas ? "disabled" : "")"
+                   asp-action="BuscarRango"
+                   asp-route-campo="@Model.Campo"
+                   asp-route-min="@Model.Min"
+                   asp-route-max="@Model.Max"
+                   asp-route-pagina="@(Model.PaginaActual + 1)">»</a>
+            </div>
+        </nav>
+    }
+
+</section>
+
+@section Scripts {
+<script>
+function setRango(campo, min, max) {
+    document.getElementById('campo').value = campo;
+    document.getElementById('min').value   = min;
+    document.getElementById('max').value   = max;
+    document.querySelector('form').submit();
+}
+</script>
+}
