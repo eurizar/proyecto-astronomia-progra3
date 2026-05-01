@@ -72,3 +72,10 @@ CLAUDE.md
 RequerimientoFinal.pdf
 ProyectoPrograIII.sln
 .fake
+/backend/AstronomiaApp/appsettings.json
+
+# ---------- Build output ----------
+publish/
+
+# ---------- Librerías locales (se usan CDN) ----------
+backend/AstronomiaApp/wwwroot/lib/
